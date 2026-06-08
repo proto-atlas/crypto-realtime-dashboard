@@ -1,0 +1,45 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "crypto-realtime-dashboard-bff",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-06",
+  "kv_namespaces": [
+    {
+      "binding": "MARKET_CACHE",
+      "id": "d134dae520dc49fcb9e07b54054fbb21"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "COINGECKO_RATE_LIMITER",
+      // 同じCloudflare account内で一意な正の整数文字列を使う。
+      "namespace_id": "2026050701",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "BINANCE_TICKER_RELAY",
+        "class_name": "BinanceTickerRelay"
+      },
+      {
+        "name": "COINBASE_TICKER_RELAY",
+        "class_name": "CoinbaseTickerRelay"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["BinanceTickerRelay"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["CoinbaseTickerRelay"]
+    }
+  ]
+}
