@@ -9,6 +9,9 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+      options: --user 1001
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -38,9 +41,6 @@ jobs:
 
       - name: Build
         run: pnpm build
-
-      - name: Install Playwright browsers
-        run: pnpm --filter web exec playwright install --with-deps chromium
 
       - name: E2E
         run: pnpm e2e
