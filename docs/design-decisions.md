@@ -17,7 +17,7 @@ CoinGecko Demo API keyはCloudflare Workers BFF側だけで使い、ブラウザ
 
 ブラウザ側はBFFのREST endpointとWebSocket relayへ接続し、外部API keyやprovider固有の認証情報を直接持たない構成にしています。これにより、UIの公開性とsecretの保護範囲を分けています。
 
-ただし、BFFは本番認証の代替ではありません。CORSとRate Limiting bindingは公開URLの境界であり、ユーザー別認証、権限管理、per-user quotaはこのリポジトリの主張範囲に含めません。
+ただし、BFFは本番認証の代替ではありません。CORSとRate Limiting bindingは公開URLでの過剰呼び出しを抑える境界であり、ユーザー別認証、権限管理、ユーザー別上限は検証対象外です。
 
 ## 3. REST連携とWebSocket連携を分ける
 

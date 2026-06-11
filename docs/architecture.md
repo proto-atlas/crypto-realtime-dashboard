@@ -54,7 +54,7 @@ WebSocket連携では、ブラウザがBFFのWebSocket relayへ接続します�
 - Coinbase relay: `/api/ws/coinbase/ticker`
 
 relayは受信したmarket payloadをUI更新に使います。raw payloadを永続保存する設計ではありません。
-WebSocket relayは公開URLで確認できる接続範囲です。per-user quota、IP単位のWebSocket接続数制限、長時間接続の保証は含めません。
+WebSocket relayで確認できるのは、公開URLからの基本的な接続と表示更新です。ユーザー別上限、IP単位のWebSocket接続数制限、長時間接続の継続性は検証対象外です。
 
 ### 取引履歴ラボ
 
@@ -62,7 +62,7 @@ WebSocket relayは公開URLで確認できる接続範囲です。per-user quota
 
 ### 仮想ポートフォリオ
 
-仮想ポートフォリオは、仮想ポジションの追加・減算、仮想現金、保有評価額、含み損益、保有比率を表示します。Zustand persistでlocalStorageへ保存し、サーバー側には保存しません。保存内容は同一ブラウザ・同一プロファイル内で共有されます。実取引、送金、ウォレット接続、取引所アカウント連携は含みません。
+仮想ポートフォリオは、仮想ポジションの追加・減算、仮想現金、保有評価額、含み損益、保有比率を表示します。Zustand persistでlocalStorageへ保存し、サーバー側には保存しません。保存内容は同一ブラウザ・同一プロファイル内で共有されます。実取引、送金、ウォレット接続、取引所アカウント連携は扱いません。
 
 ### Theme
 
