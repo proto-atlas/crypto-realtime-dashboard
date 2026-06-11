@@ -101,6 +101,33 @@ describe("DashboardPage", () => {
     expect(screen.getByText("$91,235")).toBeInTheDocument();
   });
 
+  test("REST連携でローソク足がデモfallbackなら警告を表示する", () => {
+    hookState.klines = createKlinesState({
+      source: "demo",
+      cache: "bypass",
+      updatedAt: "2026-05-07T00:00:00.000Z",
+      data: [
+        {
+          timestamp: 1_778_112_000_000,
+          open: 43000,
+          high: 43100,
+          low: 42900,
+          close: 43050,
+          volume: 120,
+          quoteVolume: 5_166_000,
+        },
+      ],
+    });
+    render(<DashboardPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "REST連携" }));
+
+    expect(screen.getByText("Binance candles unavailable")).toBeInTheDocument();
+    expect(
+      screen.getByText("Binance candlesの取得に失敗しました。Demo candlesで表示を継続しています。"),
+    ).toBeInTheDocument();
+  });
+
   test("WebSocket連携ボタンを押したらWebSocketの接続状態を表示する", () => {
     hookState.tickerStream = createTickerStreamState({
       status: "open",
@@ -160,9 +187,11 @@ function createCoinMarketsState(): QueryState<MarketDataResponse<CoinMarket[]>> 
   };
 }
 
-function createKlinesState(): QueryState<MarketDataResponse<CandlestickPoint[]>> {
+function createKlinesState(
+  data: MarketDataResponse<CandlestickPoint[]> | undefined = undefined,
+): QueryState<MarketDataResponse<CandlestickPoint[]>> {
   return {
-    data: undefined,
+    data,
     isFetching: false,
     isError: false,
   };

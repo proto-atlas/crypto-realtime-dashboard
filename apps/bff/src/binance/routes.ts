@@ -37,14 +37,13 @@ binanceWebSocketRoutes.get("/ticker", async (c) => {
 });
 
 binanceRestRoutes.get("/klines", async (c) => {
+  const symbol = c.req.query("symbol") ?? "";
+  const interval = c.req.query("interval") ?? "";
+
   try {
-    const result = await fetchBinanceKlines(
-      c.req.query("symbol") ?? "",
-      c.req.query("interval") ?? "",
-      {
-        cache: c.env?.MARKET_CACHE,
-      },
-    );
+    const result = await fetchBinanceKlines(symbol, interval, {
+      cache: c.env?.MARKET_CACHE,
+    });
     const response: MarketDataResponse<CandlestickPoint[]> = {
       source: "binance",
       cache: result.cache,
@@ -54,25 +53,12 @@ binanceRestRoutes.get("/klines", async (c) => {
 
     return c.json(response);
   } catch (error) {
-    return handleBinanceKlinesError(error);
+    return handleBinanceKlinesError(error, symbol);
   }
 });
 
-function handleBinanceKlinesError(error: unknown) {
+function handleBinanceKlinesError(error: unknown, symbol: string) {
   const upstreamStatus = readBinanceUpstreamStatus(error);
-
-  if (upstreamStatus !== null) {
-    const response: ApiErrorResponse = {
-      error: {
-        type: "upstream_http_error",
-        message: "Binance kline upstream returned an error status.",
-        upstreamStatus,
-      },
-    };
-
-    return Response.json(response, { status: 502 });
-  }
-
   const errorType = error instanceof Error ? error.message : "unknown_error";
 
   if (errorType === "invalid_binance_symbol" || errorType === "invalid_binance_interval") {
@@ -86,26 +72,12 @@ function handleBinanceKlinesError(error: unknown) {
     return Response.json(response, { status: 400 });
   }
 
-  if (errorType === "invalid_binance_klines_payload") {
-    const response: ApiErrorResponse = {
-      error: {
-        type: "invalid_upstream_payload",
-        message: "Binance kline payload could not be normalized.",
-      },
-    };
-
-    return Response.json(response, { status: 502 });
-  }
-
-  if (errorType === "binance_network_error") {
-    const response: ApiErrorResponse = {
-      error: {
-        type: "upstream_network_error",
-        message: "Binance kline upstream could not be reached.",
-      },
-    };
-
-    return Response.json(response, { status: 502 });
+  if (
+    upstreamStatus !== null ||
+    errorType === "invalid_binance_klines_payload" ||
+    errorType === "binance_network_error"
+  ) {
+    return Response.json(createDemoKlinesResponse(symbol));
   }
 
   const response: ApiErrorResponse = {
@@ -116,6 +88,55 @@ function handleBinanceKlinesError(error: unknown) {
   };
 
   return Response.json(response, { status: 502 });
+}
+
+function createDemoKlinesResponse(symbol: string): MarketDataResponse<CandlestickPoint[]> {
+  const fetchedAt = new Date().toISOString();
+  const basePrice = resolveDemoBasePrice(symbol);
+  const now = Date.now();
+  const data = Array.from({ length: 120 }, (_, index) => {
+    const timestamp = now - (119 - index) * 60_000;
+    const wave = Math.sin(index / 7) * 0.012;
+    const trend = index * 0.00025;
+    const open = roundUsd(basePrice * (1 + wave + trend));
+    const close = roundUsd(open * (1 + Math.sin(index / 5) * 0.004));
+    const high = roundUsd(Math.max(open, close) * 1.006);
+    const low = roundUsd(Math.min(open, close) * 0.994);
+
+    return {
+      timestamp,
+      open,
+      high,
+      low,
+      close,
+      volume: roundUsd(120 + index * 1.8),
+      quoteVolume: roundUsd((120 + index * 1.8) * close),
+    };
+  });
+
+  return {
+    source: "demo",
+    cache: "bypass",
+    updatedAt: fetchedAt,
+    data,
+  };
+}
+
+function resolveDemoBasePrice(symbol: string) {
+  switch (symbol.trim().toUpperCase()) {
+    case "ETHUSDT":
+      return 2200;
+    case "SOLUSDT":
+      return 110;
+    case "XRPUSDT":
+      return 0.62;
+    default:
+      return 43000;
+  }
+}
+
+function roundUsd(value: number) {
+  return Math.round(value * 100) / 100;
 }
 
 function readBinanceUpstreamStatus(error: unknown) {

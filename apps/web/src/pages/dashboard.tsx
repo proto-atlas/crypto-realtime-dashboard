@@ -1,9 +1,11 @@
 import type {
   AssetSymbol,
+  CandlestickPoint,
   ChartInterval,
   CoinMarket,
   DashboardMetric,
   MarketDataMode,
+  MarketDataResponse,
   TradingPairSymbol,
 } from "@crypto-realtime-dashboard/shared-types";
 import { useMemo, useState } from "react";
@@ -88,7 +90,7 @@ export function DashboardPage() {
   const chartStatus =
     klinesQuery.isFetching && (dataMode === "live" || streamEnabled)
       ? "Loading Binance candles"
-      : klinesQuery.isError
+      : klinesQuery.isError || isDemoKlinesFallback(klinesQuery.data, dataMode, streamEnabled)
         ? "Binance candles unavailable"
         : dataMode === "live" || streamEnabled
           ? "Binanceローソク足"
@@ -161,7 +163,10 @@ export function DashboardPage() {
               chartStatus={chartStatus}
               candles={chartCandles}
               isStreamEnabled={streamEnabled}
-              isKlinesError={klinesQuery.isError}
+              isKlinesError={
+                klinesQuery.isError ||
+                isDemoKlinesFallback(klinesQuery.data, dataMode, streamEnabled)
+              }
               onSelectInterval={setChartInterval}
             />
             <ConnectionStatusPanel
@@ -183,6 +188,14 @@ export function DashboardPage() {
       </div>
     </main>
   );
+}
+
+function isDemoKlinesFallback(
+  response: MarketDataResponse<CandlestickPoint[]> | undefined,
+  dataMode: MarketDataMode,
+  streamEnabled: boolean,
+) {
+  return (dataMode === "live" || streamEnabled) && response?.source === "demo";
 }
 
 function createLiveTicker(market: CoinMarket): MarketRow {
