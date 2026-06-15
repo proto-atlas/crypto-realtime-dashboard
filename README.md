@@ -12,6 +12,14 @@ Crypto Real-time Dashboardは、暗号資産の公開マーケットデータを
 - GitHub: https://github.com/proto-atlas/crypto-realtime-dashboard
 - BFF Worker: https://crypto-realtime-dashboard-bff.atlas-lab.workers.dev
 
+## 短時間レビューガイド
+
+30秒で見る場合は、公開URLを開き、デモモードのMarket Watch、ローソク足チャート、10万件の仮想取引履歴、仮想ポートフォリオを確認してください。初期表示では外部APIを呼びません。
+
+REST連携やWebSocket連携を選ぶと、BFF Worker経由でCoinGecko、Binance、Coinbaseの公開マーケットデータへ接続します。外部APIやWebSocketは提供元とネットワーク状態に依存するため、長時間稼働やSLAは主張しません。
+
+実装を見る場合は、まず [アーキテクチャ概要](docs/architecture.md)、[設計判断](docs/design-decisions.md)、[検証記録の一覧](docs/evidence/INDEX.md) を見てください。BFF Worker、Workers KV、Durable Objects、WebSocketの自動切り替え、10万件テーブルの扱いを追えます。
+
 ## 主な流れ
 
 - デモモードで、外部APIを呼ばずにダッシュボードを表示する。
@@ -31,19 +39,11 @@ Crypto Real-time Dashboardは、暗号資産の公開マーケットデータを
 - 自動切り替え: BinanceのWebSocketが閉じた場合やエラーになった場合に、Coinbaseへ接続先を切り替える動作。
 - 仮想ポートフォリオ: 実取引ではなく、ブラウザ内に保存するデモ用の保有情報。
 
-## 確認方法
-
-30秒で見る場合は、公開URLを開き、デモモードのMarket Watch、ローソク足チャート、取引履歴ラボ、仮想ポートフォリオを確認できます。
-
-もう少し詳しく見る場合は、REST連携 / WebSocket連携に切り替えると、BFF Worker経由の公開マーケットデータ取得とWebSocket中継を確認できます。外部接続を使う動作は外部APIやネットワーク状態の影響を受けるため、長時間稼働やSLAは主張しません。
-
-設計と検証の詳細は、[アーキテクチャ概要](docs/architecture.md)、[設計判断](docs/design-decisions.md)、[検証記録の一覧](docs/evidence/INDEX.md) にまとめています。
-
 ## 画面
 
 ![UI挙動紹介](docs/images/crypto-realtime-dashboard-demo.gif)
 
-このGIFは、UIの操作導線を短く見せるための紹介素材です。外部APIの長時間稼働、Rate Limitingの429発火、投資判断の有効性を証明するものではありません。
+このGIFは、UIの操作導線を短く見せるための紹介素材です。外部APIの長時間稼働、呼び出し回数制限で429が出ること、投資判断の有効性を証明するものではありません。
 
 ![ダッシュボード概要](docs/images/dashboard-overview.png)
 
@@ -64,7 +64,7 @@ Crypto Real-time Dashboardは、暗号資産の公開マーケットデータを
 
 - `pnpm check`: lint、typecheck、test、buildが成功
 - Vitest: shared-types、BFF、Webの単体・統合テストが成功
-- Playwright E2E: デモモード中心の7テストが成功
+- Playwright E2E: デモモード中心の8テストが成功
 - 本番URL確認: REST連携、WebSocket連携、仮想ポートフォリオのポジション更新とリロード後復元を確認
 - WebSocket自動切り替え: Binance疑似失敗時にCoinbaseへ切り替わることをPlaywright E2Eで確認
 - Lighthouse: 2026-05-07時点の手元計測を参考値として確認

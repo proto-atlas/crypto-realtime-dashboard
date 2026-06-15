@@ -13,7 +13,7 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 |---|---|---|
 | `pnpm check` | 通過 | lint、typecheck、test、build |
 | Vitest | 通過 | shared-types、BFF、Webの単体・統合テスト |
-| Playwright E2E | 7 tests通過 | デモモード中心の主要操作 |
+| Playwright E2E | 8 tests通過 | デモモード中心の主要操作 |
 | 本番URL確認 | 通過 | REST連携、WebSocket連携、仮想ポートフォリオのポジション更新とリロード後復元 |
 | WebSocket自動切り替え | 通過 | Binance疑似失敗時にCoinbaseへ切り替え |
 | Lighthouse | 参考値 | 2026-05-07時点の手元計測 |
