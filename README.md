@@ -10,7 +10,6 @@ Crypto Real-time Dashboardは、暗号資産の公開マーケットデータを
 
 - 公開URL: https://crypto-realtime-dashboard.pages.dev
 - GitHub: https://github.com/proto-atlas/crypto-realtime-dashboard
-- BFF Worker: https://crypto-realtime-dashboard-bff.atlas-lab.workers.dev
 
 ## 短時間レビューガイド
 
