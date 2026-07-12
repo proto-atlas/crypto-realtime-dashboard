@@ -7,6 +7,12 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 - [WebSocket自動切り替えの確認記録](websocket-fallback-stability-2026-05-17.md): Binance疑似失敗時にCoinbaseへ切り替わることをPlaywright E2Eで確認。
 - [信頼性改善ログ](../reliability-log.md): WebSocket自動切り替えまわりの改善履歴。
 
+## 2026-07-13のPages反映
+
+- Pagesへ反映したcommit: `6d2454f`
+- 方法: `wrangler pages deploy apps/web/dist --project-name crypto-realtime-dashboard --branch main`
+- 結果: preview URLとproduction URLがHTTP 200。productionの`index-yTwuubDq.js`はローカルbuildと368,391 bytes、SHA-256 `AB37822A40B8AA880E9959BC163B31F984152E59CAEC184CE20ACC1B538E6520`で一致。
+
 ## READMEで参照している結果
 
 | 対象 | 結果 | 補足 |
