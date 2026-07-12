@@ -1,6 +1,6 @@
 import type { CandlestickPoint, ChartInterval } from "@crypto-realtime-dashboard/shared-types";
 import { LineChart } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Panel } from "./Panel";
 
@@ -59,46 +59,15 @@ export function CandlestickPanel({
 }
 
 function DeferredCandlestickChart({ candles }: { candles: readonly CandlestickPoint[] }) {
-  const [shouldRenderChart, setShouldRenderChart] = useState(false);
-  const placeholderRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const target = placeholderRef.current;
-
-    if (target === null || shouldRenderChart) {
-      return;
-    }
-
-    if (!("IntersectionObserver" in window)) {
-      setShouldRenderChart(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) {
-        setShouldRenderChart(true);
-        observer.disconnect();
-      }
-    });
-
-    observer.observe(target);
-
-    return () => observer.disconnect();
-  }, [shouldRenderChart]);
-
   return (
-    <div ref={placeholderRef}>
-      {shouldRenderChart ? (
-        <Suspense
-          fallback={
-            <div className="h-[300px] rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950" />
-          }
-        >
-          <CandlestickChart candles={candles} />
-        </Suspense>
-      ) : (
-        <div className="h-[300px] rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950" />
-      )}
+    <div>
+      <Suspense
+        fallback={
+          <div className="h-[300px] rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950" />
+        }
+      >
+        <CandlestickChart candles={candles} />
+      </Suspense>
     </div>
   );
 }
