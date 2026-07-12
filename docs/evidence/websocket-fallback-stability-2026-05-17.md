@@ -42,12 +42,10 @@ WebSocket payloadは常に全銘柄を含むとは限らないため、表示行
 - Production PagesでBinance正常時のBFF WebSocket接続を確認
 - Binance疑似失敗時にCoinbase fallbackへ切り替わることをPlaywright E2Eで確認
 
-## 関連コミット
+## 関連履歴
 
-- Code fix commit: `5da4023`
-- Fallback E2E commit: `e535389`
-- CI run for code fix: `25983570264`
-- CI run for E2E: `25983875116`
+- この記録に記載していたcommit 2件とGitHub Actions run 2件は、履歴再構成後の現在のリポジトリとGitHub APIから参照できません。
+- 検証内容は当時の観察記録として残し、現在のmainに対する再現結果とは区別します。
 - Production URL: `https://crypto-realtime-dashboard.pages.dev`
 
 ## この記録に含めない範囲
