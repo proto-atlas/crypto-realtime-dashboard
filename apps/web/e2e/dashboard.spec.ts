@@ -22,6 +22,14 @@ test("デモモード初期表示では主要パネルを表示し外部APIを�
   expect(runtime.pageErrors).toEqual([]);
 });
 
+test("デモモード初期表示でローソク足チャートのcanvasを描画する", async ({ page }) => {
+  await page.goto("/");
+
+  const chart = page.getByTestId("candlestick-chart");
+  await expect(chart).toBeVisible();
+  await expect(chart.locator("canvas").first()).toBeVisible();
+});
+
 test("テーマ切替はdark表示を適用しリロード後も保持する", async ({ page }) => {
   const runtime = observeRuntime(page);
 
