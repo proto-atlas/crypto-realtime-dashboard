@@ -25,7 +25,7 @@ Cloudflare Workers BFF
 - `packages/shared-types`: Web/BFFで共有する型定義です。
 - Cloudflare Pages: Web UIの静的配信を担当します。
 - Cloudflare Workers: BFFのREST endpointとWebSocket relayを担当します。
-- Workers KV: CoinGecko RESTとBinance Klinesのresponse cacheに使います。
+- Workers KV: CoinGecko RESTとCoinbase candlesのresponse cacheに使います。
 - Durable Objects: Binance/Coinbase WebSocket relayの接続管理に使います。
 
 ## データフロー
@@ -36,19 +36,19 @@ Cloudflare Workers BFF
 
 ### REST連携
 
-REST連携では、ブラウザがBFFの `/api/coingecko/*` と `/api/binance/klines` を呼びます。BFFはCoinGecko Demo API keyをWorker側だけで使い、ブラウザには渡しません。
+REST連携では、ブラウザがBFFの `/api/coingecko/*` と `/api/market/candles` を呼びます。BFFはCoinGecko Demo API keyをWorker側だけで使い、ブラウザには渡しません。
 
 - CoinGecko market data: `/api/coingecko/coins/markets`
 - CoinGecko market chart: `/api/coingecko/coins/:id/market_chart`
-- Binance Klines: `/api/binance/klines`
+- Coinbase candles: `/api/market/candles`
 
-CoinGecko cacheのTTLは300秒、Binance Klines cacheのTTLは30秒です。CoinGecko RESTにはCloudflare WorkersのRate Limiting bindingを設定しています。本番Cloudflare経路では`cf-connecting-ip`を使い、`x-forwarded-for`はlocal/dev fallbackとして扱います。ただしCloudflareのRate Limitingはpermissive / eventually consistentな仕様であり、短時間バーストでは429発火を観測できない場合があります。本実装では決定的なIP単位上限としては主張せず、公開URLでの過剰呼び出し抑制を狙う境界として扱います。Binance Klinesは、対応ペアと足種をshared-types側の許可リストで制限します。
+CoinGecko cacheのTTLは300秒、Coinbase candles cacheのTTLは30秒です。CoinGecko RESTにはCloudflare WorkersのRate Limiting bindingを設定しています。本番Cloudflare経路では`cf-connecting-ip`を使い、`x-forwarded-for`はlocal/dev fallbackとして扱います。ただしCloudflareのRate Limitingはpermissive / eventually consistentな仕様であり、短時間バーストでは429発火を観測できない場合があります。本実装では決定的なIP単位上限としては主張せず、公開URLでの過剰呼び出し抑制を狙う境界として扱います。Coinbase candlesは、対応ペアと足種をshared-types側の許可リストで制限し、時刻昇順・重複除外後の最新120本を返します。
 
 CoinGeckoの価格・マーケットデータは、UIとREADMEで `Data provided by CoinGecko` と明示します。
 
 ### WebSocket連携
 
-WebSocket連携では、ブラウザがBFFのWebSocket relayへ接続します。UIはBinance relayを優先し、接続断またはerror時にCoinbase relayへfallbackします。Coinbase tickerには24h quote volumeがないため、fallback時のVolumeは `volume_24h * 直近price` の表示用近似値です。
+WebSocket連携では、ブラウザがBFFのWebSocket relayへ接続します。UIはCoinbase relayを優先し、接続断またはerror時にBinance relayへ切り替えます。Binance表示中も30秒ごとにCoinbaseへの復旧接続を試し、有効なtickerを受信してからCoinbaseへ戻します。Coinbase tickerには24h quote volumeがないため、Volumeは `volume_24h * 直近price` の表示用近似値です。Binance予備経路の価格はCoinbaseローソク足へ反映しません。
 
 - Binance relay: `/api/ws/binance/ticker`
 - Coinbase relay: `/api/ws/coinbase/ticker`
@@ -79,8 +79,9 @@ dark/light themeは、Tailwind CSSのdark variantとブラウザのlocalStorage�
 - `apps/bff/src/app.ts`: BFF route定義とCORS境界。
 - `apps/bff/src/rate-limit.ts`: CoinGecko RESTのRate Limiting境界。
 - `apps/bff/src/coingecko/*`: CoinGecko REST proxy、正規化、cache。
-- `apps/bff/src/binance/*`: Binance Klines proxyとWebSocket relay。
-- `apps/bff/src/coinbase/*`: Coinbase WebSocket relay fallback。
+- `apps/bff/src/binance/*`: Binance WebSocket予備relay。
+- `apps/bff/src/coinbase/*`: Coinbase candles取得とWebSocket主relay。
+- `apps/bff/src/market/*`: ローソク足の公開APIとデモ切り替え。
 - `packages/shared-types/src/*`: Web/BFF共有のマーケットデータ型と許可リスト。
 
 ## 境界と未主張範囲

@@ -1,9 +1,5 @@
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import { app } from "../app";
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
 
 describe("/api/ws/binance/ticker", () => {
   test("WebSocket upgradeではないrequestなら426を返す", async () => {
@@ -29,58 +25,5 @@ describe("/api/ws/binance/ticker", () => {
         message: "Binance ticker relay is not configured.",
       },
     });
-  });
-});
-
-describe("/api/binance/klines", () => {
-  test("未対応のsymbolなら400を返す", async () => {
-    const response = await app.request("/api/binance/klines?symbol=DOGEUSDT&interval=1m");
-    const body = (await response.json()) as { cache: string; data: unknown[]; source: string };
-
-    expect(response.status).toBe(400);
-    expect(body).toEqual({
-      error: {
-        type: "invalid_request",
-        message: "Binance kline request is invalid.",
-      },
-    });
-  });
-
-  test("未対応のintervalなら400を返す", async () => {
-    const response = await app.request("/api/binance/klines?symbol=BTCUSDT&interval=2m");
-    const body = (await response.json()) as { cache: string; data: unknown[]; source: string };
-
-    expect(response.status).toBe(400);
-    expect(body).toEqual({
-      error: {
-        type: "invalid_request",
-        message: "Binance kline request is invalid.",
-      },
-    });
-  });
-
-  test("上流fetchに失敗したらデモローソク足へ切り替える", async () => {
-    vi.stubGlobal("fetch", async () => {
-      throw new Error("fetch failed");
-    });
-
-    const response = await app.request("/api/binance/klines?symbol=BTCUSDT&interval=1m");
-    const body = (await response.json()) as { cache: string; data: unknown[]; source: string };
-
-    expect(response.status).toBe(200);
-    expect(body.source).toBe("demo");
-    expect(body.cache).toBe("bypass");
-    expect(body.data).toHaveLength(120);
-  });
-
-  test("上流HTTP statusが失敗ならデモローソク足へ切り替える", async () => {
-    vi.stubGlobal("fetch", async () => new Response(null, { status: 451 }));
-
-    const response = await app.request("/api/binance/klines?symbol=BTCUSDT&interval=1m");
-    const body = (await response.json()) as { data: unknown[]; source: string };
-
-    expect(response.status).toBe(200);
-    expect(body.source).toBe("demo");
-    expect(body.data).toHaveLength(120);
   });
 });

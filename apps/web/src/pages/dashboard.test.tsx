@@ -5,8 +5,8 @@ import type {
 } from "@crypto-realtime-dashboard/shared-types";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import type { TickerStreamState } from "@/hooks/useBinanceTickerStream";
-import { DashboardPage } from "./dashboard";
+import type { TickerStreamState } from "@/hooks/useMarketTickerStream";
+import { DashboardPage, findCoinbaseChartPrice } from "./dashboard";
 
 type QueryState<TData> = {
   data: TData | undefined;
@@ -45,13 +45,13 @@ vi.mock("@/hooks/useCoinMarkets", () => ({
   useCoinMarkets: () => hookState.coinMarkets,
 }));
 
-vi.mock("@/hooks/useBinanceKlines", () => ({
-  useBinanceKlines: () => hookState.klines,
+vi.mock("@/hooks/useMarketCandles", () => ({
+  useMarketCandles: () => hookState.klines,
 }));
 
 // 接続の状態遷移はhook単体で確認し、このテストでは表示状態だけを固定する。
-vi.mock("@/hooks/useBinanceTickerStream", () => ({
-  useBinanceTickerStream: () => hookState.tickerStream,
+vi.mock("@/hooks/useMarketTickerStream", () => ({
+  useMarketTickerStream: () => hookState.tickerStream,
 }));
 
 class StableIntersectionObserver {
@@ -122,9 +122,11 @@ describe("DashboardPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "REST連携" }));
 
-    expect(screen.getByText("Binance candles unavailable")).toBeInTheDocument();
+    expect(screen.getByText("Coinbaseローソク足を取得できません")).toBeInTheDocument();
     expect(
-      screen.getByText("Binance candlesの取得に失敗しました。Demo candlesで表示を継続しています。"),
+      screen.getByText(
+        "Coinbaseローソク足の取得に失敗しました。デモデータで表示を継続しています。",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -157,6 +159,18 @@ describe("DashboardPage", () => {
     expect(
       screen.getByText("Binanceマーケットデータをストリーミング中 / WebSocket連携 (Binance)"),
     ).toBeInTheDocument();
+  });
+});
+
+describe("findCoinbaseChartPrice", () => {
+  const updates = [{ symbol: "BTC-USD", closePriceUsd: 70_000 }];
+
+  test("Coinbase接続中ならBTC-USD価格を返す", () => {
+    expect(findCoinbaseChartPrice("coinbase", updates)).toBe(70_000);
+  });
+
+  test("Binance予備経路ではCoinbaseローソク足へ価格を混ぜない", () => {
+    expect(findCoinbaseChartPrice("binance", updates)).toBeNull();
   });
 });
 

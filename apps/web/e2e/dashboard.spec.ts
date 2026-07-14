@@ -14,7 +14,7 @@ test("デモモード初期表示では主要パネルを表示し外部APIを�
   await expect(page.getByRole("heading", { name: "公開マーケットデータ監視UI" })).toBeVisible();
   await expect(page.getByText("固定データ / デモ")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Market Watch" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "BTC/USDT Candlestick" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "BTC/USD ローソク足" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Connection Status" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "取引履歴ラボ" })).toBeVisible();
   expect(runtime.apiRequests).toEqual([]);
@@ -101,16 +101,16 @@ test("仮想ポートフォリオで仮想ポジションを更新できる", as
   expect(runtime.pageErrors).toEqual([]);
 });
 
-test("Binance WSが失敗したらCoinbaseへfallbackしMarket Watchの4行を維持する", async ({ page }) => {
+test("Coinbase WSが失敗したらBinanceへ切り替えMarket Watchの4行を維持する", async ({ page }) => {
   const runtime = observeRuntime(page);
   await mockTickerWebSocketFallback(page);
-  await mockBinanceKlinesResponse(page);
+  await mockMarketCandlesResponse(page);
 
   await page.goto("/");
   await page.getByRole("button", { name: "WebSocket連携" }).click();
 
   await expect(
-    page.getByText("Coinbaseマーケットデータをストリーミング中 / WebSocket連携 (Coinbase)"),
+    page.getByText("Binanceマーケットデータをストリーミング中 / WebSocket連携 (Binance)"),
   ).toBeVisible();
   await expect(
     page.locator('xpath=//p[normalize-space()="Visible Assets"]/following-sibling::p[1]'),
@@ -128,13 +128,13 @@ test("Binance WSが失敗したらCoinbaseへfallbackしMarket Watchの4行を�
     "XRP",
   ]);
   await expect(marketWatchTable.locator("td:last-child")).toHaveText([
-    "coinbase ws",
-    "coinbase ws",
-    "coinbase ws",
-    "coinbase ws",
+    "binance ws",
+    "binance ws",
+    "binance ws",
+    "binance ws",
   ]);
   expect(runtime.apiRequests).toHaveLength(1);
-  expect(new URL(runtime.apiRequests[0]).pathname).toBe("/api/binance/klines");
+  expect(new URL(runtime.apiRequests[0]).pathname).toBe("/api/market/candles");
   expect(runtime.consoleErrors).toEqual([]);
   expect(runtime.pageErrors).toEqual([]);
 });
@@ -206,11 +206,11 @@ async function expectNoBodyHorizontalOverflow(page: Page) {
   expect(overflowPixels).toBeLessThanOrEqual(2);
 }
 
-async function mockBinanceKlinesResponse(page: Page) {
-  await page.route("**/api/binance/klines?**", async (route) => {
+async function mockMarketCandlesResponse(page: Page) {
+  await page.route("**/api/market/candles?**", async (route) => {
     await route.fulfill({
       json: {
-        source: "binance",
+        source: "coinbase",
         cache: "bypass",
         updatedAt: "2026-05-17T00:00:00.000Z",
         data: [],
@@ -256,7 +256,7 @@ async function mockTickerWebSocketFallback(page: Page) {
       }
     }
 
-    class CoinbaseWebSocket extends EventTarget {
+    class BinanceWebSocket extends EventTarget {
       readonly url: string;
       readonly bufferedAmount = 0;
       readonly extensions = "";
@@ -276,7 +276,7 @@ async function mockTickerWebSocketFallback(page: Page) {
           const openEvent = new Event("open");
           this.onopen?.(openEvent);
           this.dispatchEvent(openEvent);
-          this.emitTickerMessages();
+          this.emitTickerMessage();
         }, 0);
       }
 
@@ -291,37 +291,34 @@ async function mockTickerWebSocketFallback(page: Page) {
         return;
       }
 
-      private emitTickerMessages() {
-        const messages = [
-          createCoinbaseTickerMessage("BTC-USD", "70000.00", "69000.00", "1000.00"),
-          createCoinbaseTickerMessage("ETH-USD", "3600.00", "3500.00", "9000.00"),
-          createCoinbaseTickerMessage("SOL-USD", "180.00", "175.00", "8000.00"),
-          createCoinbaseTickerMessage("XRP-USD", "0.62", "0.60", "120000.00"),
+      private emitTickerMessage() {
+        const message = [
+          createBinanceTickerMessage("BTCUSDT", "70000.00", "69000.00", "1000.00"),
+          createBinanceTickerMessage("ETHUSDT", "3600.00", "3500.00", "9000.00"),
+          createBinanceTickerMessage("SOLUSDT", "180.00", "175.00", "8000.00"),
+          createBinanceTickerMessage("XRPUSDT", "0.62", "0.60", "120000.00"),
         ];
-
-        for (const message of messages) {
-          const event = new MessageEvent("message", { data: JSON.stringify(message) });
-          this.onmessage?.(event);
-          this.dispatchEvent(event);
-        }
+        const event = new MessageEvent("message", { data: JSON.stringify(message) });
+        this.onmessage?.(event);
+        this.dispatchEvent(event);
       }
     }
 
-    function createCoinbaseTickerMessage(
-      productId: string,
+    function createBinanceTickerMessage(
+      symbol: string,
       price: string,
       open24h: string,
       volume24h: string,
     ) {
       return {
-        type: "ticker",
-        product_id: productId,
-        price,
-        open_24h: open24h,
-        high_24h: price,
-        low_24h: open24h,
-        volume_24h: volume24h,
-        time: "2026-05-17T00:00:00.000Z",
+        s: symbol,
+        c: price,
+        o: open24h,
+        h: price,
+        l: open24h,
+        v: volume24h,
+        q: String(Number(price) * Number(volume24h)),
+        E: 1_778_976_000_000,
       };
     }
 
@@ -329,11 +326,11 @@ async function mockTickerWebSocketFallback(page: Page) {
       const textUrl = String(url);
 
       if (textUrl.includes("/api/ws/binance/ticker")) {
-        return new FailedWebSocket(textUrl) as unknown as WebSocket;
+        return new BinanceWebSocket(textUrl) as unknown as WebSocket;
       }
 
       if (textUrl.includes("/api/ws/coinbase/ticker")) {
-        return new CoinbaseWebSocket(textUrl) as unknown as WebSocket;
+        return new FailedWebSocket(textUrl) as unknown as WebSocket;
       }
 
       if (protocols === undefined) {

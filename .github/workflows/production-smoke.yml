@@ -22,3 +22,17 @@ jobs:
           test "$status" = "200"
           test -s "$response_file"
           grep -F "<div id=\"root\"></div>" "$response_file"
+      - name: Coinbaseローソク足を確認
+        run: |
+          response_file=$(mktemp)
+          status=$(curl --silent --show-error --retry 3 --retry-delay 2 \
+            --output "$response_file" --write-out "%{http_code}" \
+            "https://crypto-realtime-dashboard-bff.atlas-lab.workers.dev/api/market/candles?symbol=BTC-USD&interval=1m")
+          test "$status" = "200"
+          node - "$response_file" <<'NODE'
+          const fs = require("node:fs");
+          const payload = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+          if (payload.source !== "coinbase" || !Array.isArray(payload.data) || payload.data.length !== 120) {
+            process.exit(1);
+          }
+          NODE

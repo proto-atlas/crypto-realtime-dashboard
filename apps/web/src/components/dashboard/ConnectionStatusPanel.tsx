@@ -1,6 +1,6 @@
 import type { MarketDataMode } from "@crypto-realtime-dashboard/shared-types";
 import { Cable } from "lucide-react";
-import type { TickerStreamState } from "@/hooks/useBinanceTickerStream";
+import type { TickerStreamState } from "@/hooks/useMarketTickerStream";
 import { Panel } from "./Panel";
 import { StatusRow } from "./StatusRow";
 
@@ -22,8 +22,8 @@ export function ConnectionStatusPanel({
       <div className="space-y-3">
         <StatusRow label="Active WS stream" value={`${activeStreamLabel} ${tickerStream.status}`} />
         <StatusRow
-          label="切り替え先プロバイダー"
-          value={tickerStream.activeSource === "coinbase" ? "Coinbase active" : "Coinbase standby"}
+          label="WebSocket経路"
+          value={tickerStream.activeSource === "binance" ? "Binance予備経路" : "Coinbase主経路"}
         />
         <StatusRow
           label="WebSocket payload"

@@ -6,7 +6,7 @@ import type {
   DashboardMetric,
   MarketDataMode,
   MarketDataResponse,
-  TradingPairSymbol,
+  MarketPairSymbol,
 } from "@crypto-realtime-dashboard/shared-types";
 import { useMemo, useState } from "react";
 import { CandlestickPanel } from "@/components/dashboard/CandlestickPanel";
@@ -19,15 +19,15 @@ import { MetricCard } from "@/components/dashboard/MetricCard";
 import { createStreamMarketRows } from "@/components/dashboard/marketWatchRows";
 import type { MarketRow } from "@/components/dashboard/types";
 import { VirtualPortfolioPanel } from "@/components/dashboard/VirtualPortfolioPanel";
-import { useBinanceKlines } from "@/hooks/useBinanceKlines";
-import { useBinanceTickerStream } from "@/hooks/useBinanceTickerStream";
 import { useCoinMarkets } from "@/hooks/useCoinMarkets";
+import { useMarketCandles } from "@/hooks/useMarketCandles";
+import { type TickerStreamSource, useMarketTickerStream } from "@/hooks/useMarketTickerStream";
 import { useThemePreference } from "@/hooks/useThemePreference";
 import { applyLivePriceToLastCandle } from "@/lib/candlestick";
 import { createDemoCandlesticks, createDemoTickers } from "@/lib/demoMarketData";
 
-const chartIntervals: readonly ChartInterval[] = ["1m", "5m", "15m", "1h", "1d", "1w", "1M"];
-const selectedChartPair: TradingPairSymbol = "BTCUSDT";
+const chartIntervals: readonly ChartInterval[] = ["1m", "5m", "15m", "1h", "1d"];
+const selectedChartPair: MarketPairSymbol = "BTC-USD";
 const selectedChartAsset: AssetSymbol = "BTC";
 
 export function DashboardPage() {
@@ -36,12 +36,12 @@ export function DashboardPage() {
   const [chartInterval, setChartInterval] = useState<ChartInterval>("1m");
   const { theme, toggleTheme } = useThemePreference();
   const marketsQuery = useCoinMarkets(dataMode === "live");
-  const klinesQuery = useBinanceKlines(
+  const candlesQuery = useMarketCandles(
     selectedChartPair,
     chartInterval,
     dataMode === "live" || streamEnabled,
   );
-  const tickerStream = useBinanceTickerStream(streamEnabled);
+  const tickerStream = useMarketTickerStream(streamEnabled);
   const restRows = useMemo(
     () =>
       dataMode === "live" && marketsQuery.data !== undefined
@@ -56,13 +56,13 @@ export function DashboardPage() {
   );
   const rows = streamEnabled ? streamRows : restRows;
   const chartCandles = useMemo(() => {
-    const baseCandles = klinesQuery.data?.data ?? createDemoCandlesticks(selectedChartAsset);
+    const baseCandles = candlesQuery.data?.data ?? createDemoCandlesticks(selectedChartAsset);
     const latestPrice = streamEnabled
-      ? findLatestStreamPrice(tickerStream.lastSummary?.updates)
+      ? findCoinbaseChartPrice(tickerStream.activeSource, tickerStream.lastSummary?.updates)
       : null;
 
     return applyLivePriceToLastCandle(baseCandles, latestPrice);
-  }, [klinesQuery.data, streamEnabled, tickerStream.lastSummary]);
+  }, [candlesQuery.data, streamEnabled, tickerStream.activeSource, tickerStream.lastSummary]);
   const activeStreamLabel =
     tickerStream.activeSource === "coinbase"
       ? "Coinbase"
@@ -78,8 +78,8 @@ export function DashboardPage() {
     ? tickerStream.status === "open"
       ? `${activeStreamLabel}マーケットデータをストリーミング中`
       : tickerStream.status === "error"
-        ? "Live WebSocket unavailable"
-        : "Connecting WebSocket relay"
+        ? "WebSocketを利用できません"
+        : "WebSocket中継へ接続中"
     : dataMode === "live"
       ? marketsQuery.isFetching
         ? "公開マーケットデータを取得中"
@@ -88,12 +88,12 @@ export function DashboardPage() {
           : "REST取得データ"
       : "固定データ";
   const chartStatus =
-    klinesQuery.isFetching && (dataMode === "live" || streamEnabled)
-      ? "Loading Binance candles"
-      : klinesQuery.isError || isDemoKlinesFallback(klinesQuery.data, dataMode, streamEnabled)
-        ? "Binance candles unavailable"
+    candlesQuery.isFetching && (dataMode === "live" || streamEnabled)
+      ? "Coinbaseローソク足を取得中"
+      : candlesQuery.isError || isDemoCandlesFallback(candlesQuery.data, dataMode, streamEnabled)
+        ? "Coinbaseローソク足を取得できません"
         : dataMode === "live" || streamEnabled
-          ? "Binanceローソク足"
+          ? "Coinbaseローソク足"
           : "デモ用ローソク足";
   const metrics = useMemo<DashboardMetric[]>(
     () => [
@@ -163,9 +163,9 @@ export function DashboardPage() {
               chartStatus={chartStatus}
               candles={chartCandles}
               isStreamEnabled={streamEnabled}
-              isKlinesError={
-                klinesQuery.isError ||
-                isDemoKlinesFallback(klinesQuery.data, dataMode, streamEnabled)
+              isCandlesError={
+                candlesQuery.isError ||
+                isDemoCandlesFallback(candlesQuery.data, dataMode, streamEnabled)
               }
               onSelectInterval={setChartInterval}
             />
@@ -190,7 +190,7 @@ export function DashboardPage() {
   );
 }
 
-function isDemoKlinesFallback(
+function isDemoCandlesFallback(
   response: MarketDataResponse<CandlestickPoint[]> | undefined,
   dataMode: MarketDataMode,
   streamEnabled: boolean,
@@ -209,12 +209,15 @@ function createLiveTicker(market: CoinMarket): MarketRow {
   };
 }
 
-function findLatestStreamPrice(
+export function findCoinbaseChartPrice(
+  activeSource: TickerStreamSource | null,
   updates: ReadonlyArray<{ symbol: string; closePriceUsd: number }> | undefined,
 ) {
-  const update = updates?.find(
-    (item) => item.symbol === selectedChartPair || item.symbol === "BTC-USD",
-  );
+  if (activeSource !== "coinbase") {
+    return null;
+  }
+
+  const update = updates?.find((item) => item.symbol === selectedChartPair);
 
   return update?.closePriceUsd ?? null;
 }

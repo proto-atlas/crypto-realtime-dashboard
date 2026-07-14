@@ -9,9 +9,9 @@ export type HealthResponse = {
 
 export type AssetSymbol = "BTC" | "ETH" | "SOL" | "XRP";
 
-export type TradingPairSymbol = "BTCUSDT" | "ETHUSDT" | "SOLUSDT" | "XRPUSDT";
+export type MarketPairSymbol = "BTC-USD" | "ETH-USD" | "SOL-USD" | "XRP-USD";
 
-export type ChartInterval = "1m" | "5m" | "15m" | "1h" | "1d" | "1w" | "1M";
+export type ChartInterval = "1m" | "5m" | "15m" | "1h" | "1d";
 
 export type AssetTicker = {
   symbol: AssetSymbol;
@@ -62,7 +62,7 @@ export type CandlestickPoint = {
   quoteVolume: number;
 };
 
-export type MarketDataSource = "binance" | "coingecko" | "demo";
+export type MarketDataSource = "binance" | "coinbase" | "coingecko" | "demo";
 
 export type CacheStatus = "hit" | "miss" | "bypass";
 
@@ -95,12 +95,12 @@ export const SUPPORTED_ASSET_SYMBOLS = [
   "XRP",
 ] as const satisfies readonly AssetSymbol[];
 
-export const SUPPORTED_TRADING_PAIR_SYMBOLS = [
-  "BTCUSDT",
-  "ETHUSDT",
-  "SOLUSDT",
-  "XRPUSDT",
-] as const satisfies readonly TradingPairSymbol[];
+export const SUPPORTED_MARKET_PAIR_SYMBOLS = [
+  "BTC-USD",
+  "ETH-USD",
+  "SOL-USD",
+  "XRP-USD",
+] as const satisfies readonly MarketPairSymbol[];
 
 export const SUPPORTED_CHART_INTERVALS = [
   "1m",
@@ -108,16 +108,14 @@ export const SUPPORTED_CHART_INTERVALS = [
   "15m",
   "1h",
   "1d",
-  "1w",
-  "1M",
 ] as const satisfies readonly ChartInterval[];
 
 export function isSupportedAssetSymbol(value: string): value is AssetSymbol {
   return SUPPORTED_ASSET_SYMBOLS.some((symbol) => symbol === value);
 }
 
-export function isSupportedTradingPairSymbol(value: string): value is TradingPairSymbol {
-  return SUPPORTED_TRADING_PAIR_SYMBOLS.some((symbol) => symbol === value);
+export function isSupportedMarketPairSymbol(value: string): value is MarketPairSymbol {
+  return SUPPORTED_MARKET_PAIR_SYMBOLS.some((symbol) => symbol === value);
 }
 
 export function isSupportedChartInterval(value: string): value is ChartInterval {

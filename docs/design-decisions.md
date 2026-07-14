@@ -21,19 +21,19 @@ CoinGecko Demo API keyはCloudflare Workers BFF側だけで使い、ブラウザ
 
 ## 3. REST連携とWebSocket連携を分ける
 
-REST連携はCoinGecko RESTとBinance Klinesから、一覧系データとローソク足の初期データを取得します。
+REST連携はCoinGecko RESTとCoinbase candlesから、一覧系データとローソク足の初期データを取得します。
 
-WebSocket連携はBFFのWebSocket relayからtick更新を受け取り、最後のローソク足とMarket Watchを更新します。WebSocket連携でも、ローソク足の初期表示にはBinance Klinesを使います。
+WebSocket連携はBFFのWebSocket relayからtick更新を受け取り、Market Watchを更新します。Coinbase接続中だけ、同じCoinbase由来の価格を最後のローソク足へ反映します。WebSocket連携でも、ローソク足の初期表示にはCoinbase candlesを使います。
 
 RESTとWebSocketを分けた理由は、初期表示、履歴足、tick更新で必要なデータの性質が違うためです。WebSocketだけで全状態を作ろうとすると、初期同期や欠落時の扱いが複雑になります。RESTで初期状態を作り、WebSocketで直近だけ更新する方針にしています。
 
-## 4. Binanceを主、Coinbaseを自動切り替え先にする
+## 4. Coinbaseを主、Binanceを予備経路にする
 
-WebSocket連携ではBinance relayを優先し、Binance WebSocketがcloseまたはerrorになった場合だけCoinbase relayへ切り替えます。
+WebSocket連携ではCoinbase relayを優先し、Coinbase WebSocketがcloseまたはerrorになった場合にBinance relayへ切り替えます。Binance表示中は30秒ごとにCoinbaseへの復旧接続を試し、有効なtickerを受信してから主経路へ戻します。
 
-単一の外部データ提供元だけに依存すると、接続断や一時障害でリアルタイムUI全体が止まります。一方で、常時複数の外部データ提供元を同時購読すると、公開URLでは接続数と実装複雑性が増えます。そのため、通常時はBinance、失敗時だけCoinbaseへ切り替える方針にしています。
+ローソク足と通常時のtickをCoinbaseに揃えることで、異なる取引所の価格を同じローソク足へ混ぜません。BinanceはCoinbase障害時もMarket Watchの更新を続ける予備経路とし、Binance価格はCoinbaseローソク足へ反映しません。
 
-Coinbase tickerには24h quote volumeがないため、切り替え時のVolumeは `volume_24h * 直近price` の表示用近似値として扱います。外部データ提供元ごとのデータ差分を完全に揃えることは主張しません。
+Coinbase tickerには24h quote volumeがないため、Volumeは `volume_24h * 直近price` の表示用近似値として扱います。外部データ提供元ごとのデータ差分を完全に揃えることは主張しません。
 
 ## 5. Market Watchは4資産固定表示にする
 

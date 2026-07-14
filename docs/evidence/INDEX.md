@@ -21,7 +21,7 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 | Vitest | 通過 | shared-types、BFF、Webの単体・統合テスト |
 | Playwright E2E | 9 tests通過 | デモモード中心の主要操作とローソク足canvas描画 |
 | 本番URL確認 | 通過 | REST連携、WebSocket連携、仮想ポートフォリオのポジション更新とリロード後復元 |
-| WebSocket自動切り替え | 通過 | Binance疑似失敗時にCoinbaseへ切り替え |
+| WebSocket自動切り替え | 通過 | Coinbase疑似失敗時にBinanceへ切り替え |
 | Lighthouse | 参考値 | 2026-05-07時点の手元計測 |
 
 ## 壊れやすいケースと扱い
@@ -30,7 +30,7 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 |---|---|---|
 | 外部APIを呼ばずに見たい | 初期表示をデモモードにする | 固定データで主要UIを確認できる |
 | CoinGecko RESTが失敗する | BFFでエラーを整形し、cacheを補助として使う | UI全体を止めず、状態表示で分かる |
-| Binance WebSocketが閉じる | Coinbase WebSocketへ切り替える | 接続状態に切り替え先が出る |
+| Coinbase WebSocketが閉じる | Binance WebSocketへ切り替える | 接続状態に予備経路が出る |
 | API keyを扱う | BFF Worker側だけで保持する | ブラウザにはkeyを渡さない |
 | 実取引と誤解される | 実取引、送金、ウォレット接続、投資助言は扱わないと明記する | 学習用のマーケットデータ表示として読める |
 

@@ -25,7 +25,8 @@ REST連携やWebSocket連携を選ぶと、BFF Worker経由でCoinGecko、Binanc
 - Market Watchで価格、変化率、出来高、接続状態を確認する。
 - REST連携で、BFF Worker経由のREST API取得に切り替える。
 - WebSocket連携で、WebSocket中継による価格更新に切り替える。
-- BinanceのWebSocket接続が閉じた場合は、CoinbaseのWebSocket中継へ切り替える。
+- WebSocket連携はCoinbaseを主経路とし、接続できない場合はBinanceへ切り替える。
+- Binanceへ切り替えた後は30秒ごとにCoinbaseを再確認し、有効な価格更新を受信してから主経路へ戻す。
 - 取引履歴ラボで、10万件の仮想取引履歴を検索、フィルタ、ソート、仮想スクロールで確認する。
 - 仮想ポートフォリオで、仮想ポジション、評価額、含み損益を確認する。
 
@@ -35,7 +36,7 @@ REST連携やWebSocket連携を選ぶと、BFF Worker経由でCoinGecko、Binanc
 - REST連携: BFF Worker経由でREST APIから価格データを取得するモード。
 - WebSocket連携: BFF WorkerのWebSocket中継を通して価格更新を受け取るモード。
 - BFF Worker: API keyをブラウザに出さず、外部APIとのやり取りを受け持つCloudflare Worker。
-- 自動切り替え: BinanceのWebSocketが閉じた場合やエラーになった場合に、Coinbaseへ接続先を切り替える動作。
+- 自動切り替え: CoinbaseのWebSocketが閉じた場合やエラーになった場合にBinanceへ切り替え、有効なCoinbase価格を再受信した後に主経路へ戻す動作。
 - 仮想ポートフォリオ: 実取引ではなく、ブラウザ内に保存するデモ用の保有情報。
 
 ## 画面
@@ -65,7 +66,7 @@ REST連携やWebSocket連携を選ぶと、BFF Worker経由でCoinGecko、Binanc
 - Vitest: shared-types、BFF、Webの単体・統合テストが成功
 - Playwright E2E: デモモード中心の9テストが成功
 - 本番URL確認: REST連携、WebSocket連携、仮想ポートフォリオのポジション更新とリロード後復元を確認
-- WebSocket自動切り替え: Binance疑似失敗時にCoinbaseへ切り替わることをPlaywright E2Eで確認
+- WebSocket自動切り替え: Coinbase疑似失敗時にBinanceへ切り替わることをPlaywright E2Eで確認
 - Lighthouse: 2026-05-07時点の手元計測を参考値として確認
 
 各検証は、その時点の構成と対象データに対する結果です。外部API、WebSocket中継、Cloudflare runtimeの継続稼働を保証するものではありません。

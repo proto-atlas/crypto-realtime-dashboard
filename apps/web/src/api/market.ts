@@ -5,7 +5,7 @@ import type {
   CoinMarket,
   CoinMarketChart,
   MarketDataResponse,
-  TradingPairSymbol,
+  MarketPairSymbol,
 } from "@crypto-realtime-dashboard/shared-types";
 import { getBffOrigin, normalizeBffOrigin } from "./config";
 
@@ -33,19 +33,19 @@ export async function getCoinMarketChart(coinId: string) {
   return fetchJson<MarketDataResponse<CoinMarketChart>>(createCoinMarketChartPath(coinId));
 }
 
-export async function getBinanceKlines(symbol: TradingPairSymbol, interval: ChartInterval) {
+export async function getMarketCandles(symbol: MarketPairSymbol, interval: ChartInterval) {
   return fetchJson<MarketDataResponse<CandlestickPoint[]>>(
-    createBinanceKlinesPath(symbol, interval),
+    createMarketCandlesPath(symbol, interval),
   );
 }
 
-export function createBinanceKlinesPath(symbol: TradingPairSymbol, interval: ChartInterval) {
+export function createMarketCandlesPath(symbol: MarketPairSymbol, interval: ChartInterval) {
   const query = new URLSearchParams({
     symbol,
     interval,
   });
 
-  return createApiPath(`/api/binance/klines?${query.toString()}`);
+  return createApiPath(`/api/market/candles?${query.toString()}`);
 }
 
 export function createCoinMarketChartPath(coinId: string) {

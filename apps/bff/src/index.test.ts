@@ -16,7 +16,7 @@ describe("BFF案内ルート", () => {
       endpoints: {
         health: "/api/health",
         coingeckoMarkets: "/api/coingecko/coins/markets",
-        binanceKlines: "/api/binance/klines",
+        marketCandles: "/api/market/candles",
         binanceTickerWs: "/api/ws/binance/ticker",
         coinbaseTickerWs: "/api/ws/coinbase/ticker",
       },

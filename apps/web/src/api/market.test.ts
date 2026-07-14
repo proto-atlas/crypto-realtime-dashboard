@@ -2,8 +2,8 @@ import type { CoinMarketChart, MarketDataResponse } from "@crypto-realtime-dashb
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   createApiPath,
-  createBinanceKlinesPath,
   createCoinMarketChartPath,
+  createMarketCandlesPath,
   getCoinMarketChart,
 } from "./market";
 
@@ -32,7 +32,7 @@ describe("createApiPath", () => {
         {
           error: {
             type: "upstream_http_error",
-            message: "Binance kline upstream returned an error status.",
+            message: "ローソク足の取得に失敗しました。",
             upstreamStatus: 451,
           },
         },
@@ -44,7 +44,7 @@ describe("createApiPath", () => {
       name: "MarketApiError",
       status: 502,
       type: "upstream_http_error",
-      message: "Binance kline upstream returned an error status.",
+      message: "ローソク足の取得に失敗しました。",
     });
   });
 
@@ -80,10 +80,10 @@ describe("createCoinMarketChartPath", () => {
   });
 });
 
-describe("createBinanceKlinesPath", () => {
-  test("symbolとintervalを渡したらBinance klines用pathを返す", () => {
-    expect(createBinanceKlinesPath("BTCUSDT", "1m")).toBe(
-      "/api/binance/klines?symbol=BTCUSDT&interval=1m",
+describe("createMarketCandlesPath", () => {
+  test("symbolとintervalを渡したらmarket candles用pathを返す", () => {
+    expect(createMarketCandlesPath("BTC-USD", "1m")).toBe(
+      "/api/market/candles?symbol=BTC-USD&interval=1m",
     );
   });
 });

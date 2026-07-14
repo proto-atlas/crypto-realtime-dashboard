@@ -1,7 +1,7 @@
 const baseUrl = process.env.BFF_BASE_URL ?? "http://127.0.0.1:8787";
-const url = new URL("/api/binance/klines", baseUrl);
-url.searchParams.set("symbol", process.env.BINANCE_KLINES_SYMBOL ?? "BTCUSDT");
-url.searchParams.set("interval", process.env.BINANCE_KLINES_INTERVAL ?? "1m");
+const url = new URL("/api/market/candles", baseUrl);
+url.searchParams.set("symbol", process.env.MARKET_CANDLES_SYMBOL ?? "BTC-USD");
+url.searchParams.set("interval", process.env.MARKET_CANDLES_INTERVAL ?? "1m");
 
 const response = await fetch(url).catch((error) => {
   console.log(
@@ -24,7 +24,8 @@ const response = await fetch(url).catch((error) => {
 });
 const payload = await response.json().catch(() => null);
 const candleCount = Array.isArray(payload?.data) ? payload.data.length : 0;
-const ok = response.ok && candleCount > 0;
+const source = typeof payload?.source === "string" ? payload.source : "none";
+const ok = response.ok && source === "coinbase" && candleCount === 120;
 const errorType =
   payload !== null &&
   typeof payload === "object" &&
@@ -43,7 +44,7 @@ console.log(
       baseUrl,
       status: response.status,
       cache: typeof payload?.cache === "string" ? payload.cache : "none",
-      source: typeof payload?.source === "string" ? payload.source : "none",
+      source,
       candleCount,
       errorType,
     },

@@ -16,7 +16,7 @@ export function CandlestickPanel({
   chartStatus,
   candles,
   isStreamEnabled,
-  isKlinesError,
+  isCandlesError,
   onSelectInterval,
 }: {
   intervals: readonly ChartInterval[];
@@ -24,11 +24,11 @@ export function CandlestickPanel({
   chartStatus: string;
   candles: readonly CandlestickPoint[];
   isStreamEnabled: boolean;
-  isKlinesError: boolean;
+  isCandlesError: boolean;
   onSelectInterval: (interval: ChartInterval) => void;
 }) {
   return (
-    <Panel title="BTC/USDT Candlestick" icon={<LineChart className="size-5" aria-hidden="true" />}>
+    <Panel title="BTC/USD ローソク足" icon={<LineChart className="size-5" aria-hidden="true" />}>
       <div className="mb-4 flex flex-col gap-3">
         <div className="flex flex-wrap gap-2">
           {intervals.map((interval) => (
@@ -45,13 +45,13 @@ export function CandlestickPanel({
         </div>
         <p className="text-sm text-slate-600 dark:text-slate-400">
           {chartStatus}
-          {isStreamEnabled ? " / latest tick updates last candle" : ""}
+          {isStreamEnabled ? " / Coinbase接続中のみ最新価格を反映" : ""}
         </p>
       </div>
       <DeferredCandlestickChart candles={candles} />
-      {isKlinesError ? (
+      {isCandlesError ? (
         <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
-          Binance candlesの取得に失敗しました。Demo candlesで表示を継続しています。
+          Coinbaseローソク足の取得に失敗しました。デモデータで表示を継続しています。
         </p>
       ) : null}
     </Panel>

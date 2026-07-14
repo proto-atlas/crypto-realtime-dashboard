@@ -1,10 +1,11 @@
 import type { HealthResponse } from "@crypto-realtime-dashboard/shared-types";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { binanceRestRoutes, binanceWebSocketRoutes } from "./binance/routes";
+import { binanceWebSocketRoutes } from "./binance/routes";
 import type { Bindings } from "./bindings";
 import { coinbaseRoutes } from "./coinbase/routes";
 import { coingeckoRoutes } from "./coingecko/routes";
+import { marketRoutes } from "./market/routes";
 import { enforceCoinGeckoRateLimit } from "./rate-limit";
 
 const productionPagesOrigin = "https://crypto-realtime-dashboard.pages.dev";
@@ -33,7 +34,7 @@ app.get("/", (c) =>
     endpoints: {
       health: "/api/health",
       coingeckoMarkets: "/api/coingecko/coins/markets",
-      binanceKlines: "/api/binance/klines",
+      marketCandles: "/api/market/candles",
       binanceTickerWs: "/api/ws/binance/ticker",
       coinbaseTickerWs: "/api/ws/coinbase/ticker",
     },
@@ -44,8 +45,8 @@ app.get("/health", (c) => c.json(createHealthResponse()));
 app.get("/api/health", (c) => c.json(createHealthResponse()));
 
 app.route("/api/coingecko", coingeckoRoutes);
+app.route("/api/market", marketRoutes);
 app.route("/api/ws/binance", binanceWebSocketRoutes);
-app.route("/api/binance", binanceRestRoutes);
 app.route("/api/ws/coinbase", coinbaseRoutes);
 
 export { app };

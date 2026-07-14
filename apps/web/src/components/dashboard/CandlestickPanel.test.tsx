@@ -39,7 +39,7 @@ describe("CandlestickPanel", () => {
         chartStatus="デモ用ローソク足"
         candles={[]}
         isStreamEnabled={false}
-        isKlinesError={false}
+        isCandlesError={false}
         onSelectInterval={vi.fn()}
       />,
     );
