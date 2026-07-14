@@ -5,7 +5,8 @@ on:
   schedule:
     - cron: "17 21 * * *"
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   production-smoke:
@@ -13,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: トップ画面を確認
         run: |
           response_file=$(mktemp)
@@ -22,17 +26,10 @@ jobs:
           test "$status" = "200"
           test -s "$response_file"
           grep -F "<div id=\"root\"></div>" "$response_file"
-      - name: Coinbaseローソク足を確認
+      - name: Coinbaseローソク足の5時間足を確認
+        env:
+          BFF_BASE_URL: https://crypto-realtime-dashboard-bff.atlas-lab.workers.dev
         run: |
-          response_file=$(mktemp)
-          status=$(curl --silent --show-error --retry 3 --retry-delay 2 \
-            --output "$response_file" --write-out "%{http_code}" \
-            "https://crypto-realtime-dashboard-bff.atlas-lab.workers.dev/api/market/candles?symbol=BTC-USD&interval=1m")
-          test "$status" = "200"
-          node - "$response_file" <<'NODE'
-          const fs = require("node:fs");
-          const payload = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
-          if (payload.source !== "coinbase" || !Array.isArray(payload.data) || payload.data.length !== 120) {
-            process.exit(1);
-          }
-          NODE
+          for interval in 1m 5m 15m 1h 1d; do
+            MARKET_CANDLES_INTERVAL="$interval" node scripts/check-market-candles.mjs
+          done
