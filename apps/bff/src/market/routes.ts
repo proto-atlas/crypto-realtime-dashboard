@@ -47,7 +47,8 @@ function handleCandlesError(error: unknown, symbol: string, interval: string) {
   if (
     error instanceof CoinbaseUpstreamHttpError ||
     errorType === "invalid_coinbase_candles_payload" ||
-    errorType === "coinbase_network_error"
+    errorType === "coinbase_network_error" ||
+    errorType === "coinbase_timeout_error"
   ) {
     return Response.json(createDemoCandlesResponse(symbol, interval));
   }

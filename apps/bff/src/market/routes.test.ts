@@ -72,6 +72,40 @@ describe("/api/market/candles", () => {
     expect(JSON.stringify(body)).not.toContain("upstream error");
   });
 
+  test("上流fetchが規定時間を超えたらデモローソク足へ切り替える", async () => {
+    vi.useFakeTimers();
+
+    try {
+      vi.stubGlobal(
+        "fetch",
+        (_input: RequestInfo | URL, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () => {
+              reject(new DOMException("The operation was aborted.", "AbortError"));
+            });
+          }),
+      );
+      const request = app.request("/api/market/candles?symbol=BTC-USD&interval=1m");
+
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(8_000);
+
+      const response = await request;
+      const body = (await response.json()) as { data: unknown[]; source: string };
+      expect({
+        status: response.status,
+        source: body.source,
+        candleCount: body.data.length,
+      }).toEqual({
+        status: 200,
+        source: "demo",
+        candleCount: 120,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("デモ切り替え時も選択した時間足の間隔を維持する", async () => {
     vi.stubGlobal("fetch", async () => {
       throw new Error("fetch failed");

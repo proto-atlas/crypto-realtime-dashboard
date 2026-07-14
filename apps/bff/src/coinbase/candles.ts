@@ -32,6 +32,8 @@ type CachedCandlesPayload = {
 const COINBASE_MARKET_DATA_BASE_URL = "https://api.exchange.coinbase.com";
 const COINBASE_CANDLES_LIMIT = 120;
 const COINBASE_CANDLES_CACHE_TTL_SECONDS = 30;
+// 外部API待機でWorkerの応答が止まり続けないよう、取得処理を8秒で打ち切る。
+const COINBASE_REQUEST_TIMEOUT_MS = 8_000;
 const COINBASE_USER_AGENT = "crypto-realtime-dashboard/1.0";
 
 const intervalGranularity: Readonly<Record<ChartInterval, number>> = {
@@ -141,23 +143,36 @@ async function fetchCoinbaseJson(
 ) {
   const url = new URL(`${COINBASE_MARKET_DATA_BASE_URL}/products/${symbol}/candles`);
   url.searchParams.set("granularity", String(granularity));
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), COINBASE_REQUEST_TIMEOUT_MS);
 
-  const response = await fetcher(url.toString(), {
-    headers: {
-      accept: "application/json",
-      "user-agent": COINBASE_USER_AGENT,
-    },
-  }).catch(() => {
-    throw new Error("coinbase_network_error");
-  });
+  try {
+    const response = await fetcher(url.toString(), {
+      headers: {
+        accept: "application/json",
+        "user-agent": COINBASE_USER_AGENT,
+      },
+      signal: abortController.signal,
+    }).catch(() => {
+      throw new Error(
+        abortController.signal.aborted ? "coinbase_timeout_error" : "coinbase_network_error",
+      );
+    });
 
-  if (!response.ok) {
-    throw new CoinbaseUpstreamHttpError(response.status);
+    if (!response.ok) {
+      throw new CoinbaseUpstreamHttpError(response.status);
+    }
+
+    return response.json().catch(() => {
+      throw new Error(
+        abortController.signal.aborted
+          ? "coinbase_timeout_error"
+          : "invalid_coinbase_candles_payload",
+      );
+    }) as Promise<unknown>;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return response.json().catch(() => {
-    throw new Error("invalid_coinbase_candles_payload");
-  }) as Promise<unknown>;
 }
 
 function normalizeCoinbaseCandleRow(row: unknown): CandlestickPoint {
@@ -171,8 +186,7 @@ function normalizeCoinbaseCandleRow(row: unknown): CandlestickPoint {
   const open = readFiniteNumber(row[3]);
   const close = readFiniteNumber(row[4]);
   const volume = readFiniteNumber(row[5]);
-
-  return {
+  const candle = {
     timestamp,
     open,
     high,
@@ -181,6 +195,12 @@ function normalizeCoinbaseCandleRow(row: unknown): CandlestickPoint {
     volume,
     quoteVolume: close * volume,
   };
+
+  if (!isCandlestickPoint(candle)) {
+    throw new Error("invalid_coinbase_candles_payload");
+  }
+
+  return candle;
 }
 
 async function readCachedCandles(cache: CachePort | undefined, key: string) {
@@ -215,7 +235,12 @@ function isCachedCandlesPayload(value: unknown): value is CachedCandlesPayload {
     typeof value.fetchedAt === "string" &&
     Array.isArray(value.candles) &&
     value.candles.length > 0 &&
-    value.candles.every(isCandlestickPoint)
+    value.candles.length <= COINBASE_CANDLES_LIMIT &&
+    value.candles.every(
+      (candle, index, candles) =>
+        isCandlestickPoint(candle) &&
+        (index === 0 || candle.timestamp > candles[index - 1].timestamp),
+    )
   );
 }
 
@@ -223,12 +248,30 @@ function isCandlestickPoint(value: unknown): value is CandlestickPoint {
   return (
     isRecord(value) &&
     typeof value.timestamp === "number" &&
+    Number.isInteger(value.timestamp) &&
+    value.timestamp >= 0 &&
     typeof value.open === "number" &&
+    Number.isFinite(value.open) &&
+    value.open > 0 &&
     typeof value.high === "number" &&
+    Number.isFinite(value.high) &&
+    value.high > 0 &&
     typeof value.low === "number" &&
+    Number.isFinite(value.low) &&
+    value.low > 0 &&
     typeof value.close === "number" &&
+    Number.isFinite(value.close) &&
+    value.close > 0 &&
+    value.low <= value.open &&
+    value.low <= value.close &&
+    value.high >= value.open &&
+    value.high >= value.close &&
     typeof value.volume === "number" &&
-    typeof value.quoteVolume === "number"
+    Number.isFinite(value.volume) &&
+    value.volume >= 0 &&
+    typeof value.quoteVolume === "number" &&
+    Number.isFinite(value.quoteVolume) &&
+    value.quoteVolume >= 0
   );
 }
 
