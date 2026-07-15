@@ -1,4 +1,21 @@
 export const COINBASE_MARKET_STREAM_URL = "wss://ws-feed.exchange.coinbase.com";
+export const COINBASE_UPSTREAM_CLOSE_CODE = 1011;
+export const COINBASE_UPSTREAM_CLOSE_REASON = "Coinbase上流接続が終了しました。";
+
+type RelayClientSocket = {
+  readyState: number;
+  close(code: number, reason: string): void;
+};
+
+const WEBSOCKET_OPEN_STATE = 1;
+
+export function closeOpenCoinbaseRelayClients(sockets: Iterable<RelayClientSocket>) {
+  for (const socket of sockets) {
+    if (socket.readyState === WEBSOCKET_OPEN_STATE) {
+      socket.close(COINBASE_UPSTREAM_CLOSE_CODE, COINBASE_UPSTREAM_CLOSE_REASON);
+    }
+  }
+}
 
 const STREAM_PATH = "/api/ws/coinbase/ticker";
 const PRODUCT_IDS = ["BTC-USD", "ETH-USD", "SOL-USD", "XRP-USD"] as const;

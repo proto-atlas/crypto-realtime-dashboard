@@ -1,10 +1,34 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import {
+  COINBASE_UPSTREAM_CLOSE_CODE,
+  COINBASE_UPSTREAM_CLOSE_REASON,
+  closeOpenCoinbaseRelayClients,
   createCoinbaseRelayName,
   createCoinbaseStatusMessage,
   createCoinbaseStreamPath,
   createCoinbaseSubscribeMessage,
 } from "./stream";
+
+describe("closeOpenCoinbaseRelayClients", () => {
+  test("接続中のrelay clientを上流障害のcodeとreasonで閉じる", () => {
+    const close = vi.fn();
+
+    closeOpenCoinbaseRelayClients([{ readyState: 1, close }]);
+
+    expect(close).toHaveBeenCalledWith(
+      COINBASE_UPSTREAM_CLOSE_CODE,
+      COINBASE_UPSTREAM_CLOSE_REASON,
+    );
+  });
+
+  test("接続済みでないrelay clientは閉じない", () => {
+    const close = vi.fn();
+
+    closeOpenCoinbaseRelayClients([{ readyState: 3, close }]);
+
+    expect(close).not.toHaveBeenCalled();
+  });
+});
 
 describe("createCoinbaseRelayName", () => {
   test("固定のDurable Object名を返す", () => {

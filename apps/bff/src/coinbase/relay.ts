@@ -3,6 +3,7 @@ import { isWebSocketUpgrade } from "../binance/stream";
 import type { Bindings } from "../bindings";
 import {
   COINBASE_MARKET_STREAM_URL,
+  closeOpenCoinbaseRelayClients,
   createCoinbaseStatusMessage,
   createCoinbaseSubscribeMessage,
 } from "./stream";
@@ -57,14 +58,22 @@ export class CoinbaseTickerRelay extends DurableObject<Bindings> {
     });
 
     upstream.addEventListener("close", () => {
-      this.upstream = null;
-      this.broadcast(createCoinbaseStatusMessage("upstream_closed"));
+      this.handleUpstreamUnavailable(upstream);
     });
 
     upstream.addEventListener("error", () => {
-      this.upstream = null;
-      this.broadcast(createCoinbaseStatusMessage("upstream_closed"));
+      this.handleUpstreamUnavailable(upstream);
     });
+  }
+
+  private handleUpstreamUnavailable(upstream: WebSocket) {
+    if (this.upstream !== upstream) {
+      return;
+    }
+
+    this.upstream = null;
+    this.broadcast(createCoinbaseStatusMessage("upstream_closed"));
+    closeOpenCoinbaseRelayClients(this.ctx.getWebSockets());
   }
 
   private broadcast(message: string | ArrayBuffer) {
