@@ -33,22 +33,21 @@ describe("VirtualPortfolioPanel", () => {
     localStorage.clear();
   });
 
-  test("仮想保有を追加したら保有数量と更新履歴を表示する", () => {
+  test("初期数量のまま追加実行ボタンを押したら保有数量と更新履歴を表示する", () => {
     render(<VirtualPortfolioPanel rows={rows} />);
 
-    fireEvent.change(screen.getByLabelText("数量"), { target: { value: "0.1" } });
-    fireEvent.click(screen.getByRole("button", { name: "仮想ポジションを更新" }));
+    fireEvent.click(screen.getByRole("button", { name: "BTCを0.1追加する" }));
 
     expect(screen.getByText("BTCの仮想保有を追加しました。")).toBeInTheDocument();
     expect(screen.getByText("0.1000 単位")).toBeInTheDocument();
     expect(screen.getByText("BTCを追加")).toBeInTheDocument();
   });
 
-  test("保有していない銘柄を減らそうとしたら不足メッセージを表示する", () => {
+  test("減らすを選んで実行したら保有不足メッセージを表示する", () => {
     render(<VirtualPortfolioPanel rows={rows} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "減らす" }));
-    fireEvent.click(screen.getByRole("button", { name: "仮想ポジションを更新" }));
+    fireEvent.click(screen.getByRole("button", { name: "減らす", pressed: false }));
+    fireEvent.click(screen.getByRole("button", { name: "BTCを0.1減らす" }));
 
     expect(screen.getByText("仮想保有数量が不足しています。")).toBeInTheDocument();
   });

@@ -40,6 +40,12 @@ export function VirtualPortfolioPanel({ rows }: { rows: readonly MarketRow[] }) 
     selectedMarket !== null && Number.isFinite(quantity) && quantity > 0
       ? quantity * selectedMarket.priceUsd
       : 0;
+  const actionLabel = side === "buy" ? "追加する" : "減らす";
+  const submitTarget =
+    selectedMarket !== null && Number.isFinite(quantity) && quantity > 0
+      ? `${selectedMarket.symbol}を${quantityInput}`
+      : "仮想保有を";
+  const submitLabel = `${submitTarget}${actionLabel}`;
 
   useEffect(() => {
     if (rows.length > 0 && rows.every((row) => row.symbol !== selectedSymbol)) {
@@ -152,25 +158,30 @@ export function VirtualPortfolioPanel({ rows }: { rows: readonly MarketRow[] }) 
           </label>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant={side === "buy" ? "default" : "secondary"}
-            size="sm"
-            aria-pressed={side === "buy"}
-            onClick={() => setSide("buy")}
-          >
-            追加
-          </Button>
-          <Button
-            type="button"
-            variant={side === "sell" ? "default" : "secondary"}
-            size="sm"
-            aria-pressed={side === "sell"}
-            onClick={() => setSide("sell")}
-          >
-            減らす
-          </Button>
+        <div className="grid gap-2">
+          <fieldset>
+            <legend className="text-sm font-medium text-slate-700 dark:text-slate-300">操作</legend>
+            <div className="mt-2 flex items-center gap-2">
+              <Button
+                type="button"
+                variant={side === "buy" ? "default" : "secondary"}
+                size="sm"
+                aria-pressed={side === "buy"}
+                onClick={() => setSide("buy")}
+              >
+                追加
+              </Button>
+              <Button
+                type="button"
+                variant={side === "sell" ? "default" : "secondary"}
+                size="sm"
+                aria-pressed={side === "sell"}
+                onClick={() => setSide("sell")}
+              >
+                減らす
+              </Button>
+            </div>
+          </fieldset>
           <div className="ml-auto flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <WalletCards className="size-4" aria-hidden="true" />
             想定金額 {formatUsd(previewUsd)}
@@ -178,7 +189,7 @@ export function VirtualPortfolioPanel({ rows }: { rows: readonly MarketRow[] }) 
         </div>
 
         <Button type="submit" disabled={selectedMarket === null}>
-          仮想ポジションを更新
+          {submitLabel}
         </Button>
       </form>
 

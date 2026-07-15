@@ -81,14 +81,14 @@ test("取引履歴ラボで検索と仮想スクロールを操作できる", as
   expect(runtime.pageErrors).toEqual([]);
 });
 
-test("仮想ポートフォリオで仮想ポジションを更新できる", async ({ page }) => {
+test("仮想ポートフォリオで初期数量のまま追加操作を実行できる", async ({ page }) => {
   const runtime = observeRuntime(page);
 
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "仮想ポートフォリオ" })).toBeVisible();
-  await page.getByLabel("数量").fill("0.1");
-  await page.getByRole("button", { name: "仮想ポジションを更新" }).click();
+  await expect(page.getByLabel("数量")).toHaveValue("0.1");
+  await page.getByRole("button", { name: "BTCを0.1追加する" }).click();
 
   await expect(page.getByText("BTCの仮想保有を追加しました。")).toBeVisible();
   await expect(page.getByText("0.1000 単位")).toBeVisible();
@@ -96,6 +96,20 @@ test("仮想ポートフォリオで仮想ポジションを更新できる", as
   await page.reload();
   await expect(page.getByText("0.1000 単位")).toBeVisible();
   await expect(page.getByText("BTCを追加")).toBeVisible();
+  expect(runtime.apiRequests).toEqual([]);
+  expect(runtime.consoleErrors).toEqual([]);
+  expect(runtime.pageErrors).toEqual([]);
+});
+
+test("仮想ポートフォリオの数量入力でEnterを押して追加できる", async ({ page }) => {
+  const runtime = observeRuntime(page);
+
+  await page.goto("/");
+
+  await page.getByLabel("数量").press("Enter");
+
+  await expect(page.getByText("BTCの仮想保有を追加しました。")).toBeVisible();
+  await expect(page.getByText("0.1000 単位")).toBeVisible();
   expect(runtime.apiRequests).toEqual([]);
   expect(runtime.consoleErrors).toEqual([]);
   expect(runtime.pageErrors).toEqual([]);
@@ -162,7 +176,9 @@ for (const viewport of responsiveViewports) {
     await page.getByRole("heading", { name: "仮想ポートフォリオ" }).scrollIntoViewIfNeeded();
     await expect(page.getByRole("heading", { name: "仮想ポートフォリオ" })).toBeVisible();
     await expect(page.getByLabel("数量")).toBeVisible();
-    await expect(page.getByRole("button", { name: "仮想ポジションを更新" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "追加", pressed: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "減らす", pressed: false })).toBeVisible();
+    await expect(page.getByRole("button", { name: "BTCを0.1追加する" })).toBeVisible();
     await expectNoBodyHorizontalOverflow(page);
     expect(runtime.apiRequests).toEqual([]);
     expect(runtime.consoleErrors).toEqual([]);
