@@ -13,6 +13,21 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 - 方法: `wrangler pages deploy apps/web/dist --project-name crypto-realtime-dashboard --branch main`
 - 結果: preview URLとproduction URLがHTTP 200。productionの`index-yTwuubDq.js`はローカルbuildと368,391 bytes、SHA-256 `AB37822A40B8AA880E9959BC163B31F984152E59CAEC184CE20ACC1B538E6520`で一致。
 
+## 2026-07-15の総合確認
+
+- 方法: `pnpm check`を実行し、ESLint、TypeScript、Node.jsスクリプトテスト、Vitest、production buildを確認。
+- 対象: shared-types、BFF、Web、ローソク足取得スクリプト。
+- 結果: ESLintはshared-types 4ファイル、BFF 32ファイル、Web 71ファイルを通過。Node.jsスクリプトテスト4件、shared-types 7件、BFF 72件、Web 109件の計192件が通過し、typecheckとbuildも通過。
+- 方法: `pnpm e2e`を実行し、デモ操作、ローソク足canvas、WebSocket予備接続、375px・390px・768px、desktop表示後の390pxリサイズを確認。
+- 対象: Playwright E2E 10件。
+- 結果: 10件すべて通過。
+- 方法: OSV-Scanner 2.4.0で`pnpm-lock.yaml`を検査。
+- 対象: lockfile内の339 packages。
+- 結果: 既知の脆弱性は検出されず。
+- 方法: `wrangler deploy --dry-run`を実行。
+- 対象: BFF Worker、Durable Objects 2件、KV、Rate Limiting binding。
+- 結果: bundle作成とbinding解決が通過。圧縮後サイズは22.61 KiB。
+
 ## READMEで参照している結果
 
 | 対象 | 結果 | 補足 |
