@@ -82,21 +82,10 @@ jobs:
       - name: Webをbuild
         run: pnpm --filter web build
 
-      - name: Cloudflare認証情報を準備
-        id: cloudflare-token
-        env:
-          RAW_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          token="${RAW_TOKEN//$'\r'/}"
-          token="${token//$'\n'/}"
-          test -n "$token"
-          echo "::add-mask::$token"
-          printf 'token=%s\n' "$token" >> "$GITHUB_OUTPUT"
-
       - name: Workerをdeploy
         uses: cloudflare/wrangler-action@v4
         with:
-          apiToken: ${{ steps.cloudflare-token.outputs.token }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           packageManager: pnpm
@@ -107,7 +96,7 @@ jobs:
       - name: Pagesをdeploy
         uses: cloudflare/wrangler-action@v4
         with:
-          apiToken: ${{ steps.cloudflare-token.outputs.token }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           packageManager: pnpm
