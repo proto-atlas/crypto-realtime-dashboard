@@ -1,6 +1,7 @@
 # Crypto Real-time Dashboard
 
 [![CI](https://github.com/proto-atlas/crypto-realtime-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/proto-atlas/crypto-realtime-dashboard/actions/workflows/ci.yml)
+[![公開環境確認](https://github.com/proto-atlas/crypto-realtime-dashboard/actions/workflows/production-smoke.yml/badge.svg)](https://github.com/proto-atlas/crypto-realtime-dashboard/actions/workflows/production-smoke.yml)
 
 Crypto Real-time Dashboardは、暗号資産の公開マーケットデータを題材にしたリアルタイムダッシュボードです。デモモード、REST連携、WebSocket連携を切り替えながら、価格更新、ローソク足チャート、10万件の仮想取引履歴、仮想ポートフォリオを確認できます。
 
@@ -11,7 +12,7 @@ Crypto Real-time Dashboardは、暗号資産の公開マーケットデータを
 - 公開URL: https://crypto-realtime-dashboard.pages.dev
 - GitHub: https://github.com/proto-atlas/crypto-realtime-dashboard
 
-## 短時間レビューガイド
+## 短時間確認ガイド
 
 30秒で見る場合は、公開URLを開き、デモモードのMarket Watch、ローソク足チャート、10万件の仮想取引履歴、仮想ポートフォリオを確認してください。初期表示では外部APIを呼びません。
 
@@ -55,18 +56,17 @@ REST連携やWebSocket連携を選ぶと、BFF Worker経由でCoinGecko、Binanc
 
 - [アーキテクチャ概要](docs/architecture.md): Pages、Workers BFF、KV、Durable Objects、外部APIとのデータフロー
 - [設計判断](docs/design-decisions.md): デモモード、BFF Worker、WebSocket自動切り替え、仮想ポートフォリオ、テスト方針
-- [検証記録の一覧](docs/evidence/INDEX.md): CI、Playwright E2E、本番URL確認、WebSocket自動切り替えの確認記録
+- [検証記録の一覧](docs/evidence/INDEX.md): CI、Playwright E2E、公開環境確認、WebSocket自動切り替えの確認記録
+- [現在のWebSocket経路の確認記録](docs/evidence/websocket-primary-fallback-2026-07-15.md): Coinbase主経路、Binance予備経路、Coinbase復旧時の切り戻し
 - [信頼性改善ログ](docs/reliability-log.md): WebSocket自動切り替えまわりの改善履歴
 
 ## 検証記録
 
 主な検証記録は [docs/evidence/INDEX.md](docs/evidence/INDEX.md) から確認できます。
 
-- `pnpm check`: lint、typecheck、test、buildが成功
-- Vitest: shared-types、BFF、Webの単体・統合テストが成功
-- Playwright E2E: デモモード中心の10テストが成功
-- 本番URL確認: REST連携、WebSocket連携、仮想ポートフォリオのポジション更新とリロード後復元を確認
-- WebSocket自動切り替え: Coinbase疑似失敗時にBinanceへ切り替わることをPlaywright E2Eで確認
+- `pnpm check`: Biome、typecheck、Node.jsスクリプトテスト、Vitest計192件、buildが成功
+- Playwright E2E: デモ操作、ローソク足canvas、仮想ポートフォリオのクリック・Enter操作、Coinbase疑似失敗時のBinance切り替え、375px・390px・768px表示を含む11件が成功
+- 公開環境確認: トップ画面がHTTP 200を返し、Coinbaseローソク足の`1m`、`5m`、`15m`、`1h`、`1d`で各120本のOHLCVと時刻間隔を確認
 - Lighthouse: 2026-05-07時点の手元計測を参考値として確認
 
 各検証は、その時点の構成と対象データに対する結果です。外部API、WebSocket中継、Cloudflare runtimeの継続稼働を保証するものではありません。
@@ -80,6 +80,12 @@ pnpm check
 ```
 
 `COINGECKO_API_KEY` はBFF側だけで使う値です。ブラウザへ直接渡しません。ローカルでREST連携やWebSocket中継を確認する場合は、`apps/bff/.dev.vars.example` を参考に `apps/bff/.dev.vars` を作成します。`.dev.vars` はgit管理しません。
+
+## CI/CD
+
+`main`へのpushでは、GitHub Actionsがlint、typecheck、test、build、Playwright E2Eを実行します。すべて成功した場合だけ、同じcommitのBFF WorkerとWebをCloudflare Workers / Pagesへ反映します。
+
+同じブランチで新しい実行が始まった場合は古い実行を中止し、古いcommitが後から公開先を上書きしないようにしています。公開環境確認は手動実行と日次実行に対応し、トップ画面とCoinbaseローソク足5種類を確認します。
 
 ## 技術スタック
 

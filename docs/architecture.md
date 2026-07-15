@@ -62,7 +62,7 @@ WebSocket relayで確認できるのは、公開URLからの基本的な接続�
 
 ### 仮想ポートフォリオ
 
-仮想ポートフォリオは、仮想ポジションの追加・減算、仮想現金、保有評価額、含み損益、保有比率を表示します。Zustand persistでlocalStorageへ保存し、サーバー側には保存しません。保存内容は同一ブラウザ・同一プロファイル内で共有されます。実取引、送金、ウォレット接続、取引所アカウント連携は扱いません。
+仮想ポートフォリオは、仮想ポジションの追加・減算、仮想現金、保有評価額、含み損益、保有比率を表示します。追加・減らす操作を選ぶと、銘柄、数量、操作を含む実行ボタンへ表示内容を反映します。Zustand persistでlocalStorageへ保存し、サーバー側には保存しません。保存内容は同一ブラウザ・同一プロファイル内で共有されます。実取引、送金、ウォレット接続、取引所アカウント連携は扱いません。
 
 ### Theme
 
@@ -100,6 +100,14 @@ dark/light themeは、Tailwind CSSのdark variantとブラウザのlocalStorage�
 
 ## 検証の位置づけ
 
-`pnpm check` でlint、typecheck、Vitest、buildをまとめて確認します。Playwright E2Eはデモモード中心の主要操作を確認し、REST連携 / WebSocket連携は外部APIの揺らぎを避けるため、本番URLでの時点確認に寄せています。2026-05-08時点の本番URLでは、CORS header、REST連携、WebSocket連携を確認しています。Rate Limiting bindingの429発火は短時間バーストでは観測できていないため、deterministicな制限としては未主張範囲です。
+`pnpm check`でBiome、typecheck、Node.jsスクリプトテスト、Vitest、buildをまとめて確認します。`pnpm e2e`はデモモードの主要操作、ローソク足canvas、仮想ポートフォリオのクリック・Enter操作、Coinbase疑似失敗時のBinance切り替え、レスポンシブ表示を確認します。
+
+公開環境確認workflowは、トップ画面のHTTP 200と、Coinbaseローソク足の`1m`、`5m`、`15m`、`1h`、`1d`について、120本のOHLCV、時刻順序、足間隔を確認します。外部WebSocketの実障害や長時間接続、Rate Limiting bindingの短時間バースト時の429発火は自動確認の対象外です。
 
 この検証は特定時点の確認です。外部API側の仕様変更、rate limit、ネットワーク状態まで継続保証するものではありません。
+
+## CI/CD
+
+`.github/workflows/ci.yml`は、`main`へのpushとpull requestでlint、typecheck、test、build、Playwright E2Eを実行します。`main`へのpushでは、検証成功後に同じcommitのBFF WorkerとWebをCloudflare Workers / Pagesへ反映します。
+
+workflowとGit refの組み合わせで同時実行を制御し、新しい実行が始まった場合は古い実行を中止します。`.github/workflows/production-smoke.yml`は、手動または日次で公開環境確認を実行します。

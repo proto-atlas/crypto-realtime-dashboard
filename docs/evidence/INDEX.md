@@ -2,9 +2,11 @@
 
 Crypto Real-time Dashboardの検証記録をまとめます。各記録は、その時点の構成、外部APIの状態、対象データに対する確認結果です。外部API、WebSocket中継、Cloudflare runtimeの継続稼働を保証するものではありません。
 
-## 公開URL
+## 個別記録
 
-- [WebSocket自動切り替えの確認記録](websocket-fallback-stability-2026-05-17.md): Binance疑似失敗時にCoinbaseへ切り替わることをPlaywright E2Eで確認。
+- [現在のWebSocket経路の確認記録](websocket-primary-fallback-2026-07-15.md): Coinbaseを主経路、Binanceを予備経路とする切り替えを単体テストとPlaywright E2Eで確認。
+- [仮想ポートフォリオ操作の確認記録](virtual-portfolio-operation-2026-07-15.md): 操作選択、動的な実行ボタン、クリック・Enter操作を確認。
+- [2026-05-17の表示安定化記録](websocket-fallback-stability-2026-05-17.md): Market Watchを4資産固定表示へ変更した当時の記録。現在のプロバイダー順序の根拠には使用しない。
 - [信頼性改善ログ](../reliability-log.md): WebSocket自動切り替えまわりの改善履歴。
 
 ## 2026-07-13のPages反映
@@ -28,15 +30,23 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 - 対象: BFF Worker、Durable Objects 2件、KV、Rate Limiting binding。
 - 結果: bundle作成とbinding解決が通過。圧縮後サイズは22.61 KiB。
 
+## 2026-07-15のGitHub Actions反映
+
+- 対象commit: `a5e870383b1c5ce7b7396665663f496dce0bfb3d`
+- 方法: [CI run 29382939459](https://github.com/proto-atlas/crypto-realtime-dashboard/actions/runs/29382939459)でlint、typecheck、test、build、Playwright E2Eを実行し、成功後にWorkerとPagesを反映。
+- 結果: CI、Worker反映、Pages反映が成功。Worker Version IDは`aa2fc23d-3724-4040-ad48-7b81728dd114`。
+- 方法: [公開環境確認 run 29383084698](https://github.com/proto-atlas/crypto-realtime-dashboard/actions/runs/29383084698)でトップ画面とCoinbaseローソク足5種類を確認。
+- 結果: トップ画面はHTTP 200。`1m`、`5m`、`15m`、`1h`、`1d`は各120本で、OHLCV、時刻順序、足間隔の検査を通過。
+
 ## READMEで参照している結果
 
 | 対象 | 結果 | 補足 |
 |---|---|---|
 | `pnpm check` | 通過 | lint、typecheck、test、build |
 | Vitest | 通過 | shared-types、BFF、Webの単体・統合テスト |
-| Playwright E2E | 10 tests通過 | デモモード中心の主要操作、ローソク足canvas描画、desktop表示後の390pxリサイズ |
-| 本番URL確認 | 通過 | REST連携、WebSocket連携、仮想ポートフォリオのポジション更新とリロード後復元 |
-| WebSocket自動切り替え | 通過 | Coinbase疑似失敗時にBinanceへ切り替え |
+| Playwright E2E | 11件通過 | デモ操作、ローソク足canvas、仮想ポートフォリオのクリック・Enter操作、Coinbase疑似失敗時のBinance切り替え、レスポンシブ表示 |
+| 公開環境確認 | 通過 | トップ画面のHTTP 200、Coinbaseローソク足5種類の各120本、OHLCV、時刻順序、足間隔 |
+| WebSocket自動切り替え | 通過 | 疑似接続でCoinbaseからBinanceへ切り替え、30秒後のCoinbase有効ticker受信後に復帰 |
 | Lighthouse | 参考値 | 2026-05-07時点の手元計測 |
 
 ## 壊れやすいケースと扱い

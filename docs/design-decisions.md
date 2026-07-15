@@ -41,7 +41,7 @@ Market WatchはBTC / ETH / SOL / XRPの4行を固定し、届いたtickだけを
 
 WebSocket payloadは常に全銘柄を含むとは限らないため、最新payloadに含まれる銘柄だけで行を作ると、WebSocket連携中に表示行数が増減します。監視UIとしては、同じ銘柄を同じ順番で見続けられる方が状態変化を読み取りやすいため、主要4資産の固定表示にしました。
 
-この判断と修正の詳細は [WebSocket Fallback Stability Record](evidence/websocket-fallback-stability-2026-05-17.md) に記録しています。
+現在の主経路・予備経路と検証範囲は [WebSocket主経路・予備経路の確認記録](evidence/websocket-primary-fallback-2026-07-15.md) に記録しています。4資産固定表示の導入経緯は [2026-05-17の表示安定化記録](evidence/websocket-fallback-stability-2026-05-17.md) に分けています。
 
 ## 6. Cacheはfail-openにする
 
@@ -73,6 +73,8 @@ CoinGecko RESTにはCloudflare WorkersのRate Limiting bindingを設定してい
 
 このデモで見せたいのは、実取引ではなく、価格データを使ったUI状態管理、入力検証、損益計算、リロード後復元です。そのため、保存範囲を同一ブラウザ・同一プロファイル内に限定しています。
 
+追加・減らすは仮想保有の操作種別として選択し、実行ボタンには銘柄、数量、操作を表示します。選択と実行を分けつつ、実行内容がボタンだけで分かるようにしています。フォーム送信はクリックとEnterの両方に対応します。
+
 端末共有、プライベートブラウジング、ブラウザstorage制限下での永続性は主張しません。
 
 ## 10. Theme設定は補助機能として扱う
@@ -87,9 +89,9 @@ storageの読み書きに失敗した場合でも、描画自体は止めませ�
 
 BFF、lib、hooksは外部データの正規化、fallback、状態遷移を単体テストで確認します。
 
-UIはdashboard統合テストと主要component testで、壊れたら気付ける範囲に絞ります。Playwright E2Eはデモモード中心にし、外部APIの揺らぎで不安定になりやすいREST連携 / WebSocket連携は本番URLでの時点確認に寄せています。
+UIはdashboard統合テストと主要component testで、壊れたら気付ける範囲に絞ります。Playwright E2Eはデモモード中心にし、WebSocket切り替えは疑似接続で決定的に確認します。公開環境では、トップ画面とCoinbaseローソク足5種類を日次または手動のworkflowで確認します。
 
-この方針は、外部providerの可用性をテスト成功条件にしないためです。Live経路の存在は確認しますが、長時間稼働、外部providerのSLA、Rate Limitingの429発火までは主張しません。
+この方針は、通常のCIで外部providerの可用性をテスト成功条件にしないためです。外部WebSocketの実障害、長時間稼働、外部providerのSLA、Rate Limitingの429発火までは主張しません。
 
 ## 12. 主張範囲をUIと境界設計に置く
 

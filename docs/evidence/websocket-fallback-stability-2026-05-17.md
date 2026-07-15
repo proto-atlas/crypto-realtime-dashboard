@@ -1,11 +1,12 @@
-# WebSocket自動切り替えの確認記録
+# Market Watch表示安定化の確認記録（2026-05-17）
 
-| Item | Value |
+| 項目 | 内容 |
 |---|---|
-| Status | Resolved |
-| Date | 2026-05-17 |
-| Project | crypto-realtime-dashboard |
-| Area | WebSocket連携 / Market Watch / fallback behavior |
+| 状態 | 対応済み |
+| 日付 | 2026-05-17 |
+| 対象 | WebSocket連携 / Market Watchの表示行 |
+
+> この文書は4資産固定表示を導入した当時の記録です。現在のCoinbase主経路・Binance予備経路については、[2026-07-15の確認記録](websocket-primary-fallback-2026-07-15.md)を参照してください。
 
 ## 概要
 
@@ -16,10 +17,7 @@ WebSocket連携中にMarket Watchの表示asset数が増減する挙動を確認
 ## 影響
 
 - 利用者への影響: Market Watchの行数が揺れ、UIが不安定に見える
-- データ欠損: なし
-- 取引への影響: なし
-- セキュリティへの影響: なし
-- 対象: 公開UIのWebSocket fallback確認
+- 対象: WebSocket payload受信時のMarket Watch表示
 
 ## 原因
 
@@ -31,25 +29,20 @@ WebSocket payloadは常に全銘柄を含むとは限らないため、表示行
 - last-known tickを保持するように変更
 - Market WatchをBTC / ETH / SOL / XRPの固定4行に変更
 - 主要4銘柄を同じ順序で比較できる監視UIにし、WebSocket payloadの揺れで表示行数が変わらないようにした
-- Binance WS失敗時のCoinbase fallback E2Eを追加
 
 ## 確認結果
 
-- Unit tests: 通過
-- Playwright E2E: 通過
-- GitHub Actions CI: 通過
-- Production PagesでWebSocket連携中のMarket Watchが4行維持されることを確認
-- Production PagesでBinance正常時のBFF WebSocket接続を確認
-- Binance疑似失敗時にCoinbase fallbackへ切り替わることをPlaywright E2Eで確認
+- 当時の単体テストとPlaywright E2Eで、Market Watchが4行を維持することを確認
+- 当時の公開Pagesで、WebSocket連携中のMarket Watchが4行を維持することを確認
 
-## 関連履歴
+## 現在との関係
 
-- この記録に記載していたcommit 2件とGitHub Actions run 2件は、履歴再構成後の現在のリポジトリとGitHub APIから参照できません。
-- 検証内容は当時の観察記録として残し、現在のmainに対する再現結果とは区別します。
-- Production URL: `https://crypto-realtime-dashboard.pages.dev`
+- 4資産固定表示とlast-known stateは現在の実装でも継続している
+- 当時のプロバイダー順序と現在の主経路・予備経路は異なるため、この文書を現在の切り替え順序の根拠には使用しない
+- 現在の検証方法と結果は[2026-07-15の確認記録](websocket-primary-fallback-2026-07-15.md)に分ける
 
 ## この記録に含めない範囲
 
-- Binance本体の実障害を発生させた確認ではない
-- 長時間運用保証ではない
-- 負荷テストではない
+- 外部WebSocket本体の実障害
+- 長時間接続
+- 負荷試験
