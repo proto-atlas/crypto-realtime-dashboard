@@ -15,9 +15,9 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 
 ## 2026-07-15の総合確認
 
-- 方法: `pnpm check`を実行し、ESLint、TypeScript、Node.jsスクリプトテスト、Vitest、production buildを確認。
+- 方法: `pnpm check`を実行し、Biome、TypeScript、Node.jsスクリプトテスト、Vitest、production buildを確認。
 - 対象: shared-types、BFF、Web、ローソク足取得スクリプト。
-- 結果: ESLintはshared-types 4ファイル、BFF 32ファイル、Web 71ファイルを通過。Node.jsスクリプトテスト4件、shared-types 7件、BFF 72件、Web 109件の計192件が通過し、typecheckとbuildも通過。
+- 結果: Biomeはshared-types 4ファイル、BFF 32ファイル、Web 71ファイルを通過。Node.jsスクリプトテスト4件、shared-types 7件、BFF 72件、Web 109件の計192件が通過し、typecheckとbuildも通過。
 - 方法: `pnpm e2e`を実行し、デモ操作、ローソク足canvas、WebSocket予備接続、375px・390px・768px、desktop表示後の390pxリサイズを確認。
 - 対象: Playwright E2E 10件。
 - 結果: 10件すべて通過。
