@@ -42,7 +42,7 @@ REST連携では、ブラウザがBFFの `/api/coingecko/*` と `/api/market/can
 - CoinGecko market chart: `/api/coingecko/coins/:id/market_chart`
 - Coinbase candles: `/api/market/candles`
 
-CoinGecko cacheのTTLは300秒、Coinbase candles cacheのTTLは30秒です。CoinGecko RESTにはCloudflare WorkersのRate Limiting bindingを設定しています。本番Cloudflare経路では`cf-connecting-ip`を使い、`x-forwarded-for`はlocal/dev fallbackとして扱います。ただしCloudflareのRate Limitingはpermissive / eventually consistentな仕様であり、短時間バーストでは429発火を観測できない場合があります。本実装では決定的なIP単位上限としては主張せず、公開URLでの過剰呼び出し抑制を狙う境界として扱います。Coinbase candlesは、対応ペアと足種をshared-types側の許可リストで制限し、時刻昇順・重複除外後の最新120本を返します。
+CoinGecko cacheのTTLは300秒、Coinbase candles cacheのTTLは30秒です。CoinGecko RESTにはCloudflare WorkersのRate Limiting bindingを設定しています。本番Cloudflare経路では`cf-connecting-ip`を使い、`x-forwarded-for`はlocal/dev fallbackとして扱います。ただしCloudflareのRate Limitingはpermissive / eventually consistentな仕様であり、短時間バーストでは429発火を観測できない場合があります。本実装では決定的なIP単位上限としては主張せず、公開URLでの過剰呼び出し抑制を狙う境界として扱います。Coinbase candlesは、対応ペアと足種をshared-types側の許可リストで制限し、重複timestampを拒否して時刻昇順の最新120本を返します。
 
 CoinGeckoの価格・マーケットデータは、UIとREADMEで `Data provided by CoinGecko` と明示します。
 

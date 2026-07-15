@@ -118,16 +118,21 @@ export function normalizeCoinbaseCandles(payload: unknown) {
     throw new Error("invalid_coinbase_candles_payload");
   }
 
-  const candlesByTimestamp = new Map<number, CandlestickPoint>();
+  const candles: CandlestickPoint[] = [];
+  const timestamps = new Set<number>();
 
   for (const row of payload) {
     const candle = normalizeCoinbaseCandleRow(row);
-    candlesByTimestamp.set(candle.timestamp, candle);
+
+    if (timestamps.has(candle.timestamp)) {
+      throw new Error("invalid_coinbase_candles_payload");
+    }
+
+    timestamps.add(candle.timestamp);
+    candles.push(candle);
   }
 
-  const candles = Array.from(candlesByTimestamp.values()).sort(
-    (left, right) => left.timestamp - right.timestamp,
-  );
+  candles.sort((left, right) => left.timestamp - right.timestamp);
 
   if (candles.length === 0) {
     throw new Error("invalid_coinbase_candles_payload");
@@ -180,7 +185,7 @@ function normalizeCoinbaseCandleRow(row: unknown): CandlestickPoint {
     throw new Error("invalid_coinbase_candles_payload");
   }
 
-  const timestamp = readTimestampSeconds(row[0]) * 1000;
+  const timestamp = readTimestampMilliseconds(row[0]);
   const low = readFiniteNumber(row[1]);
   const high = readFiniteNumber(row[2]);
   const open = readFiniteNumber(row[3]);
@@ -248,8 +253,9 @@ function isCandlestickPoint(value: unknown): value is CandlestickPoint {
   return (
     isRecord(value) &&
     typeof value.timestamp === "number" &&
-    Number.isInteger(value.timestamp) &&
+    Number.isSafeInteger(value.timestamp) &&
     value.timestamp >= 0 &&
+    Number.isFinite(new Date(value.timestamp).getTime()) &&
     typeof value.open === "number" &&
     Number.isFinite(value.open) &&
     value.open > 0 &&
@@ -271,16 +277,23 @@ function isCandlestickPoint(value: unknown): value is CandlestickPoint {
     value.volume >= 0 &&
     typeof value.quoteVolume === "number" &&
     Number.isFinite(value.quoteVolume) &&
-    value.quoteVolume >= 0
+    value.quoteVolume >= 0 &&
+    value.quoteVolume === value.close * value.volume
   );
 }
 
-function readTimestampSeconds(value: unknown) {
-  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+function readTimestampMilliseconds(value: unknown) {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
     throw new Error("invalid_coinbase_candles_payload");
   }
 
-  return value;
+  const timestamp = value * 1000;
+
+  if (!Number.isSafeInteger(timestamp) || !Number.isFinite(new Date(timestamp).getTime())) {
+    throw new Error("invalid_coinbase_candles_payload");
+  }
+
+  return timestamp;
 }
 
 function readFiniteNumber(value: unknown) {

@@ -27,22 +27,21 @@ describe("normalizeChartInterval", () => {
 });
 
 describe("normalizeCoinbaseCandles", () => {
-  test("Coinbase配列を時刻昇順にし、重複時刻を除外する", () => {
+  test("Coinbase配列を時刻昇順にする", () => {
     expect(
       normalizeCoinbaseCandles([
         [1_700_000_060, 95, 112, 100, 108, 3],
         [1_700_000_000, 90, 110, 100, 105, 2],
-        [1_700_000_000, 91, 111, 101, 106, 4],
       ]),
     ).toEqual([
       {
         timestamp: 1_700_000_000_000,
-        open: 101,
-        high: 111,
-        low: 91,
-        close: 106,
-        volume: 4,
-        quoteVolume: 424,
+        open: 100,
+        high: 110,
+        low: 90,
+        close: 105,
+        volume: 2,
+        quoteVolume: 210,
       },
       {
         timestamp: 1_700_000_060_000,
@@ -68,6 +67,45 @@ describe("normalizeCoinbaseCandles", () => {
 
   test("空配列を拒否する", () => {
     expect(() => normalizeCoinbaseCandles([])).toThrow("invalid_coinbase_candles_payload");
+  });
+
+  test("配列でないpayloadを拒否する", () => {
+    expect(() => normalizeCoinbaseCandles({ data: [] })).toThrow(
+      "invalid_coinbase_candles_payload",
+    );
+  });
+
+  test("6要素未満のrowを拒否する", () => {
+    expect(() => normalizeCoinbaseCandles([[1_700_000_000, 90, 110, 100, 105]])).toThrow(
+      "invalid_coinbase_candles_payload",
+    );
+  });
+
+  test("非有限数を含むrowを拒否する", () => {
+    expect(() =>
+      normalizeCoinbaseCandles([[1_700_000_000, 90, Number.POSITIVE_INFINITY, 100, 105, 2]]),
+    ).toThrow("invalid_coinbase_candles_payload");
+  });
+
+  test("価格が0のrowを拒否する", () => {
+    expect(() => normalizeCoinbaseCandles([[1_700_000_000, 0, 110, 100, 105, 2]])).toThrow(
+      "invalid_coinbase_candles_payload",
+    );
+  });
+
+  test("同一timestampを含むpayloadを拒否する", () => {
+    expect(() =>
+      normalizeCoinbaseCandles([
+        [1_700_000_000, 90, 110, 100, 105, 2],
+        [1_700_000_000, 91, 111, 101, 106, 4],
+      ]),
+    ).toThrow("invalid_coinbase_candles_payload");
+  });
+
+  test("ミリ秒変換後に安全整数を超えるtimestampを拒否する", () => {
+    expect(() =>
+      normalizeCoinbaseCandles([[Number.MAX_SAFE_INTEGER, 90, 110, 100, 105, 2]]),
+    ).toThrow("invalid_coinbase_candles_payload");
   });
 
   test("openがhighを超えるローソク足を拒否する", () => {
@@ -148,6 +186,35 @@ describe("fetchCoinbaseCandles", () => {
     expect(result.cache).toBe("miss");
   });
 
+  test("120本を超えるキャッシュを無視して上流から取得する", async () => {
+    const cache = createCacheWithCandles(
+      Array.from({ length: 121 }, (_, index) => createCachedCandle(index * 60_000)),
+    );
+    const fetcher = vi.fn(async () => Response.json(validPayload));
+
+    const result = await fetchCoinbaseCandles("BTC-USD", "1m", { cache, fetcher });
+
+    expect(result.cache).toBe("miss");
+  });
+
+  test("timestampが降順のキャッシュを無視して上流から取得する", async () => {
+    const cache = createCacheWithCandles([createCachedCandle(120_000), createCachedCandle(60_000)]);
+    const fetcher = vi.fn(async () => Response.json(validPayload));
+
+    const result = await fetchCoinbaseCandles("BTC-USD", "1m", { cache, fetcher });
+
+    expect(result.cache).toBe("miss");
+  });
+
+  test("quoteVolumeが終値と出来高に一致しないキャッシュを無視する", async () => {
+    const cache = createCacheWithCandles([{ ...createCachedCandle(60_000), quoteVolume: 999 }]);
+    const fetcher = vi.fn(async () => Response.json(validPayload));
+
+    const result = await fetchCoinbaseCandles("BTC-USD", "1m", { cache, fetcher });
+
+    expect(result.cache).toBe("miss");
+  });
+
   test("上流fetchが失敗したらnetwork errorを投げる", async () => {
     const fetcher = vi.fn(async () => {
       throw new Error("fetch failed");
@@ -190,4 +257,74 @@ describe("fetchCoinbaseCandles", () => {
       vi.useRealTimers();
     }
   });
+
+  test("上流取得が成功したらtimeout timerを解除する", async () => {
+    vi.useFakeTimers();
+
+    try {
+      const fetcher = vi.fn(async () => Response.json(validPayload));
+
+      await fetchCoinbaseCandles("BTC-USD", "1m", { fetcher });
+
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("上流HTTP errorでもtimeout timerを解除する", async () => {
+    vi.useFakeTimers();
+
+    try {
+      const fetcher = vi.fn(async () => new Response(null, { status: 500 }));
+
+      await expect(fetchCoinbaseCandles("BTC-USD", "1m", { fetcher })).rejects.toThrow(
+        "coinbase_upstream_http_error",
+      );
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("上流JSON errorでもtimeout timerを解除する", async () => {
+    vi.useFakeTimers();
+
+    try {
+      const fetcher = vi.fn(
+        async () => new Response("{", { headers: { "content-type": "application/json" } }),
+      );
+
+      await expect(fetchCoinbaseCandles("BTC-USD", "1m", { fetcher })).rejects.toThrow(
+        "invalid_coinbase_candles_payload",
+      );
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
+
+function createCachedCandle(timestamp: number) {
+  return {
+    timestamp,
+    open: 100,
+    high: 110,
+    low: 90,
+    close: 105,
+    volume: 2,
+    quoteVolume: 210,
+  };
+}
+
+function createCacheWithCandles(candles: ReturnType<typeof createCachedCandle>[]) {
+  return {
+    async get<TValue>() {
+      return {
+        fetchedAt: "2026-07-15T00:00:00.000Z",
+        candles,
+      } as unknown as TValue;
+    },
+    put: vi.fn(async () => undefined),
+  };
+}

@@ -26,7 +26,7 @@ jobs:
           test "$status" = "200"
           test -s "$response_file"
           grep -F "<div id=\"root\"></div>" "$response_file"
-      - name: Coinbaseローソク足の5時間足を確認
+      - name: Coinbaseローソク足の全時間足を確認
         env:
           BFF_BASE_URL: https://crypto-realtime-dashboard-bff.atlas-lab.workers.dev
         run: |
