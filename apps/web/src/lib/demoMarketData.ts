@@ -2,6 +2,7 @@ import type {
   AssetSymbol,
   AssetTicker,
   CandlestickPoint,
+  ChartInterval,
   CoinMarketChart,
   CoinMarketChartPoint,
 } from "@crypto-realtime-dashboard/shared-types";
@@ -9,6 +10,14 @@ import type {
 const DEMO_CHART_START_TIMESTAMP = Date.UTC(2026, 0, 1, 0, 0, 0);
 const DEMO_CHART_INTERVAL_MS = 60 * 60 * 1000;
 const DEFAULT_DEMO_CHART_POINTS = 24;
+
+const demoCandlestickIntervalMs: Readonly<Record<ChartInterval, number>> = {
+  "1m": 60_000,
+  "5m": 300_000,
+  "15m": 900_000,
+  "1h": 3_600_000,
+  "1d": 86_400_000,
+};
 
 const demoTickers: readonly AssetTicker[] = [
   {
@@ -105,6 +114,7 @@ export function createDemoMarketChart(
 
 export function createDemoCandlesticks(
   symbol: AssetSymbol,
+  interval: ChartInterval,
   pointCount = DEFAULT_DEMO_CHART_POINTS,
 ): CandlestickPoint[] {
   if (pointCount < 1) {
@@ -115,7 +125,7 @@ export function createDemoCandlesticks(
   let previousClose = createDemoPrice(symbol, 0);
 
   for (let index = 0; index < pointCount; index += 1) {
-    const timestamp = DEMO_CHART_START_TIMESTAMP + DEMO_CHART_INTERVAL_MS * index;
+    const timestamp = DEMO_CHART_START_TIMESTAMP + demoCandlestickIntervalMs[interval] * index;
     const close = createDemoPrice(symbol, index);
     const open = index === 0 ? previousClose * 0.998 : previousClose;
     const spread = Math.max(close * 0.003, 0.01);

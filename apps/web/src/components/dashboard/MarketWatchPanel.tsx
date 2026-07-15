@@ -18,7 +18,7 @@ export function MarketWatchPanel({
   isStreamError: boolean;
 }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+    <section className="min-w-0 rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
         <div>
           <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">Market Watch</h2>

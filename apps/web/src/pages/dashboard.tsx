@@ -56,13 +56,20 @@ export function DashboardPage() {
   );
   const rows = streamEnabled ? streamRows : restRows;
   const chartCandles = useMemo(() => {
-    const baseCandles = candlesQuery.data?.data ?? createDemoCandlesticks(selectedChartAsset);
+    const baseCandles =
+      candlesQuery.data?.data ?? createDemoCandlesticks(selectedChartAsset, chartInterval);
     const latestPrice = streamEnabled
       ? findCoinbaseChartPrice(tickerStream.activeSource, tickerStream.lastSummary?.updates)
       : null;
 
     return applyLivePriceToLastCandle(baseCandles, latestPrice);
-  }, [candlesQuery.data, streamEnabled, tickerStream.activeSource, tickerStream.lastSummary]);
+  }, [
+    candlesQuery.data,
+    chartInterval,
+    streamEnabled,
+    tickerStream.activeSource,
+    tickerStream.lastSummary,
+  ]);
   const activeStreamLabel =
     tickerStream.activeSource === "coinbase"
       ? "Coinbase"

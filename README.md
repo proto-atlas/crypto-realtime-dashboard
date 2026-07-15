@@ -64,7 +64,7 @@ REST連携やWebSocket連携を選ぶと、BFF Worker経由でCoinGecko、Binanc
 
 - `pnpm check`: lint、typecheck、test、buildが成功
 - Vitest: shared-types、BFF、Webの単体・統合テストが成功
-- Playwright E2E: デモモード中心の9テストが成功
+- Playwright E2E: デモモード中心の10テストが成功
 - 本番URL確認: REST連携、WebSocket連携、仮想ポートフォリオのポジション更新とリロード後復元を確認
 - WebSocket自動切り替え: Coinbase疑似失敗時にBinanceへ切り替わることをPlaywright E2Eで確認
 - Lighthouse: 2026-05-07時点の手元計測を参考値として確認

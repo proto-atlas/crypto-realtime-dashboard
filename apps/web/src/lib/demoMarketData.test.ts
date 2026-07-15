@@ -33,8 +33,8 @@ describe("createDemoMarketChart", () => {
 });
 
 describe("createDemoCandlesticks", () => {
-  test("BTCと2件を渡したら決定的なローソク足を返す", () => {
-    expect(createDemoCandlesticks("BTC", 2)).toEqual([
+  test("BTC・1時間足・2件を渡したら決定的なローソク足を返す", () => {
+    expect(createDemoCandlesticks("BTC", "1h", 2)).toEqual([
       {
         timestamp: 1767225600000,
         open: 42699.43,
@@ -54,5 +54,17 @@ describe("createDemoCandlesticks", () => {
         quoteVolume: 18270000000,
       },
     ]);
+  });
+
+  test.each([
+    ["1m", 60_000],
+    ["5m", 300_000],
+    ["15m", 900_000],
+    ["1h", 3_600_000],
+    ["1d", 86_400_000],
+  ] as const)("%sを渡したら隣接timestamp差が%dmsになる", (interval, expectedDifference) => {
+    const candles = createDemoCandlesticks("BTC", interval, 2);
+
+    expect((candles[1]?.timestamp ?? 0) - (candles[0]?.timestamp ?? 0)).toBe(expectedDifference);
   });
 });

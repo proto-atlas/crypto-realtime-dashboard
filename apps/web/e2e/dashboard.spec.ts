@@ -170,6 +170,16 @@ for (const viewport of responsiveViewports) {
   });
 }
 
+test("desktop表示後に390pxへ変更しても横幅が画面内に収まる", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/");
+  await expect(page.getByTestId("candlestick-chart")).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 1000 });
+
+  await expectNoBodyHorizontalOverflow(page);
+});
+
 function observeRuntime(page: Page): RuntimeObservation {
   const observation: RuntimeObservation = {
     consoleErrors: [],
@@ -197,13 +207,55 @@ function observeRuntime(page: Page): RuntimeObservation {
 }
 
 async function expectNoBodyHorizontalOverflow(page: Page) {
-  const overflowPixels = await page.evaluate(() => {
+  const layout = await page.evaluate(() => {
     const scrollingElement = document.scrollingElement ?? document.documentElement;
+    const overflowingElements = Array.from(document.querySelectorAll("body *"))
+      .map((element) => ({
+        element,
+        rect: element.getBoundingClientRect(),
+      }))
+      .filter(
+        ({ element, rect }) =>
+          rect.right > window.innerWidth + 2 && !isClippedByHorizontalOverflow(element),
+      )
+      .slice(0, 10)
+      .map(({ element, rect }) => ({
+        tag: element.tagName.toLowerCase(),
+        className: element.className,
+        right: Math.round(rect.right),
+        width: Math.round(rect.width),
+      }));
 
-    return scrollingElement.scrollWidth - window.innerWidth;
+    return {
+      overflowPixels: scrollingElement.scrollWidth - window.innerWidth,
+      overflowingElements,
+    };
+
+    function isClippedByHorizontalOverflow(element: Element) {
+      let ancestor = element.parentElement;
+
+      while (ancestor !== null && ancestor !== document.body) {
+        const style = getComputedStyle(ancestor);
+        const clipsOverflow =
+          style.overflowX === "auto" ||
+          style.overflowX === "scroll" ||
+          style.overflowX === "hidden";
+
+        if (clipsOverflow && ancestor.getBoundingClientRect().right <= window.innerWidth + 2) {
+          return true;
+        }
+
+        ancestor = ancestor.parentElement;
+      }
+
+      return false;
+    }
   });
 
-  expect(overflowPixels).toBeLessThanOrEqual(2);
+  expect(
+    layout.overflowPixels,
+    JSON.stringify({ overflowingElements: layout.overflowingElements }, null, 2),
+  ).toBeLessThanOrEqual(2);
 }
 
 async function mockMarketCandlesResponse(page: Page) {

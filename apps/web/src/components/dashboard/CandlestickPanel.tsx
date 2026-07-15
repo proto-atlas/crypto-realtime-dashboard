@@ -60,7 +60,7 @@ export function CandlestickPanel({
 
 function DeferredCandlestickChart({ candles }: { candles: readonly CandlestickPoint[] }) {
   return (
-    <div>
+    <div className="min-w-0 w-full overflow-hidden">
       <Suspense
         fallback={
           <div className="h-[300px] rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950" />
