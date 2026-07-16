@@ -65,8 +65,9 @@ REST連携やWebSocket連携を選ぶと、BFF Worker経由でCoinGecko、Binanc
 主な検証記録は [docs/evidence/INDEX.md](docs/evidence/INDEX.md) から確認できます。
 
 - `pnpm check`: Biome、typecheck、Node.jsスクリプトテスト、Vitest計192件、buildが成功
-- Playwright E2E: デモ操作、ローソク足canvas、仮想ポートフォリオのクリック・Enter操作、Coinbase疑似失敗時のBinance切り替え、375px・390px・768px表示を含む11件が成功
-- 公開環境確認: トップ画面がHTTP 200を返し、Coinbaseローソク足の`1m`、`5m`、`15m`、`1h`、`1d`で各120本のOHLCVと時刻間隔を確認
+- Playwright E2E: デモ操作、ローソク足canvas、仮想ポートフォリオのクリック・Enter操作、localStorage制限時の操作、Coinbase疑似失敗時のBinance切り替え、375px・390px・768px表示を含む13件が成功
+- 公開環境E2E: 仮想ポートフォリオのクリック・Enter・減少・再読み込み保持、操作状態、390px表示を含む5件が成功
+- 公開環境API確認: トップ画面がHTTP 200を返し、Coinbaseローソク足の`1m`、`5m`、`15m`、`1h`、`1d`で各120本のOHLCVと時刻間隔を確認
 - Lighthouse: 2026-05-07時点の手元計測を参考値として確認
 
 各検証は、その時点の構成と対象データに対する結果です。外部API、WebSocket中継、Cloudflare runtimeの継続稼働を保証するものではありません。
@@ -85,7 +86,7 @@ pnpm check
 
 `main`へのpushでは、GitHub Actionsがlint、typecheck、test、build、Playwright E2Eを実行します。すべて成功した場合だけ、同じcommitのBFF WorkerとWebをCloudflare Workers / Pagesへ反映します。
 
-同じブランチで新しい実行が始まった場合は古い実行を中止し、古いcommitが後から公開先を上書きしないようにしています。公開環境確認は手動実行と日次実行に対応し、トップ画面とCoinbaseローソク足5種類を確認します。
+同じブランチで新しい実行が始まった場合は古い実行を中止し、古いcommitが後から公開先を上書きしないようにしています。公開環境確認は手動実行と日次実行に対応し、トップ画面、Coinbaseローソク足5種類、Coinbase/Binance WebSocketの初回データ受信、公開UIの主要操作を確認します。
 
 ## 技術スタック
 

@@ -4,6 +4,7 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 
 ## 個別記録
 
+- [2026-07-16の公開UI・保存制限確認](production-ui-storage-2026-07-16.md): 公開UIの主要操作、localStorage制限時の操作継続、レスポンシブ表示を確認。
 - [現在のWebSocket経路の確認記録](websocket-primary-fallback-2026-07-15.md): Coinbaseを主経路、Binanceを予備経路とする切り替えを単体テストとPlaywright E2Eで確認。
 - [仮想ポートフォリオ操作の確認記録](virtual-portfolio-operation-2026-07-15.md): 操作選択、動的な実行ボタン、クリック・Enter操作を確認。
 - [2026-05-17の表示安定化記録](websocket-fallback-stability-2026-05-17.md): Market Watchを4資産固定表示へ変更した当時の記録。現在のプロバイダー順序の根拠には使用しない。
@@ -44,7 +45,8 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 |---|---|---|
 | `pnpm check` | 通過 | lint、typecheck、test、build |
 | Vitest | 通過 | shared-types、BFF、Webの単体・統合テスト |
-| Playwright E2E | 11件通過 | デモ操作、ローソク足canvas、仮想ポートフォリオのクリック・Enter操作、Coinbase疑似失敗時のBinance切り替え、レスポンシブ表示 |
+| Playwright E2E | 13件通過 | デモ操作、ローソク足canvas、仮想ポートフォリオのクリック・Enter操作、localStorage制限時の操作、Coinbase疑似失敗時のBinance切り替え、レスポンシブ表示 |
+| 公開環境E2E | 5件通過 | クリック・Enter・減少・再読み込み保持、操作状態、390px表示 |
 | 公開環境確認 | 通過 | トップ画面のHTTP 200、Coinbaseローソク足5種類の各120本、OHLCV、時刻順序、足間隔 |
 | WebSocket自動切り替え | 通過 | 疑似接続でCoinbaseからBinanceへ切り替え、30秒後のCoinbase有効ticker受信後に復帰 |
 | Lighthouse | 参考値 | 2026-05-07時点の手元計測 |

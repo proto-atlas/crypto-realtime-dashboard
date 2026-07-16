@@ -69,7 +69,7 @@ CoinGecko RESTにはCloudflare WorkersのRate Limiting bindingを設定してい
 
 ## 9. 仮想ポートフォリオはlocalStorageに限定する
 
-仮想ポートフォリオは、Zustand persistでlocalStorageへ保存します。サーバー側保存、ユーザーアカウント、ログイン、取引所アカウント連携は扱いません。
+仮想ポートフォリオは、Zustand persistでlocalStorageへ保存します。localStorageへのアクセスがブラウザ設定で拒否された場合は、画面操作を継続し、再読み込み後の保持だけを行いません。サーバー側保存、ユーザーアカウント、ログイン、取引所アカウント連携は扱いません。
 
 このデモで見せたいのは、実取引ではなく、価格データを使ったUI状態管理、入力検証、損益計算、リロード後復元です。そのため、保存範囲を同一ブラウザ・同一プロファイル内に限定しています。
 
@@ -89,7 +89,7 @@ storageの読み書きに失敗した場合でも、描画自体は止めませ�
 
 BFF、lib、hooksは外部データの正規化、fallback、状態遷移を単体テストで確認します。
 
-UIはdashboard統合テストと主要component testで、壊れたら気付ける範囲に絞ります。Playwright E2Eはデモモード中心にし、WebSocket切り替えは疑似接続で決定的に確認します。公開環境では、トップ画面とCoinbaseローソク足5種類を日次または手動のworkflowで確認します。
+UIはdashboard統合テストと主要component testで、壊れたら気付ける範囲に絞ります。Playwright E2Eはデモモード中心にし、WebSocket切り替えは疑似接続で決定的に確認します。公開環境では、トップ画面、Coinbaseローソク足5種類、Coinbase/Binance WebSocketの初回受信、仮想ポートフォリオの主要操作を日次または手動のworkflowで確認します。
 
 この方針は、通常のCIで外部providerの可用性をテスト成功条件にしないためです。外部WebSocketの実障害、長時間稼働、外部providerのSLA、Rate Limitingの429発火までは主張しません。
 
