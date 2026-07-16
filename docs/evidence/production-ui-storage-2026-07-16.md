@@ -33,10 +33,17 @@ localStorageのgetterが`SecurityError`を返す条件でも、画面を表示�
 
 WebSocket継続検査の判定ロジックは4件の単体テストで、正常受信、途中切断、無受信、WebSocketエラーを確認した。
 
+### 公開WebSocketの15分観測
+
+- 方法: PlaywrightのChromiumで公開Pagesを開き、公開BFFのCoinbase/Binance WebSocketへ同時接続して900,000ms観測
+- 対象: `/api/ws/coinbase/ticker`、`/api/ws/binance/ticker`
+- 結果: Coinbase 630件、Binance 901件を受信。観測終了前のcloseは両方0件、errorも両方0件
+
+この結果は2026-07-16の15分間に対する確認であり、継続稼働やSLAを保証するものではない。
+
 ## 未確認範囲
 
 - CoinbaseまたはBinance本体の実障害時の切り替え
-- この端末から公開BFFへのNode.js WebSocket長時間接続
 - mobile実機での長時間操作
 - スクリーンリーダー実機での読み上げ順序と操作感
 

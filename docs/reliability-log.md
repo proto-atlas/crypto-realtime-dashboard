@@ -9,7 +9,8 @@
 
 - 詳細: [公開UI・保存制限の確認記録](evidence/production-ui-storage-2026-07-16.md)
 - 検証: `pnpm check`、ローカルPlaywright E2E 13件、公開環境Playwright E2E 5件
-- 未確認範囲: 外部WebSocketの実障害、公開BFFへの長時間接続、mobile実機、スクリーンリーダー実機
+- 公開WebSocket確認: ChromiumでCoinbase/Binanceへ同時接続し、15分間で630件/901件を受信。途中close 0件、error 0件
+- 未確認範囲: 外部WebSocketの実障害、mobile実機、スクリーンリーダー実機
 
 ## 2026-07-15 仮想ポートフォリオの操作を明確化
 
