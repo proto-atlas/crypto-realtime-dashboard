@@ -12,10 +12,27 @@ jobs:
   production-smoke:
     name: 公開URLの応答確認
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+      options: --user 1001
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
+        with:
+          version: 10.33.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: トップ画面を確認
         run: |
@@ -33,3 +50,18 @@ jobs:
           for interval in 1m 5m 15m 1h 1d; do
             MARKET_CANDLES_INTERVAL="$interval" node scripts/check-market-candles.mjs
           done
+
+      - name: Coinbase WebSocketを確認
+        env:
+          BFF_BASE_URL: https://crypto-realtime-dashboard-bff.atlas-lab.workers.dev
+        run: node scripts/check-coinbase-ws.mjs
+
+      - name: Binance WebSocketを確認
+        env:
+          BFF_BASE_URL: https://crypto-realtime-dashboard-bff.atlas-lab.workers.dev
+        run: node scripts/check-binance-ws.mjs
+
+      - name: 公開UIを確認
+        env:
+          PRODUCTION_BASE_URL: https://crypto-realtime-dashboard.pages.dev
+        run: pnpm e2e:production

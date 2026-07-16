@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "biome check .",
     "test": "vitest run --pool=threads --no-file-parallelism",
-    "e2e": "tsc -p tsconfig.json --noEmit && vite build && playwright test"
+    "e2e": "tsc -p tsconfig.json --noEmit && vite build && playwright test",
+    "e2e:production": "playwright test --config playwright.production.config.ts"
   },
   "dependencies": {
     "@crypto-realtime-dashboard/shared-types": "workspace:*",

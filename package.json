@@ -20,12 +20,14 @@
     "build": "corepack pnpm -r --if-present build",
     "typecheck": "corepack pnpm -r --if-present typecheck",
     "lint": "corepack pnpm -r --if-present lint",
-    "test": "node --test scripts/market-candles-validation.test.mjs && corepack pnpm -r --workspace-concurrency=1 --if-present test",
+    "test": "node --test scripts/market-candles-validation.test.mjs scripts/websocket-duration-validation.test.mjs && corepack pnpm -r --workspace-concurrency=1 --if-present test",
     "e2e": "corepack pnpm --filter web e2e",
+    "e2e:production": "corepack pnpm --filter web e2e:production",
     "check:coingecko-rest": "node scripts/check-coingecko-rest.mjs",
     "check:market-candles": "node scripts/check-market-candles.mjs",
     "check:binance-ws": "node scripts/check-binance-ws.mjs",
     "check:coinbase-ws": "node scripts/check-coinbase-ws.mjs",
+    "check:websocket-duration": "node scripts/check-websocket-duration.mjs",
     "check": "corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build"
   },
   "devDependencies": {

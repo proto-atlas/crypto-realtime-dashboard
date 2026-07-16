@@ -115,6 +115,32 @@ test("仮想ポートフォリオの数量入力でEnterを押して追加でき
   expect(runtime.pageErrors).toEqual([]);
 });
 
+test("localStorageを利用できなくても仮想ポートフォリオを操作できる", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      get() {
+        throw new DOMException("Storage access is disabled.", "SecurityError");
+      },
+    });
+  });
+
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { name: "仮想ポートフォリオ" })).toBeVisible();
+  await page.getByRole("button", { name: "BTCを0.1追加する" }).click();
+  await expect(page.getByText("BTCの仮想保有を追加しました。")).toBeVisible();
+  await expect(page.getByText("0.1000 単位")).toBeVisible();
+});
+
+test("仮想保有の操作グループと選択状態を識別できる", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.getByRole("group", { name: "操作" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "追加", pressed: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "減らす", pressed: false })).toBeVisible();
+});
+
 test("Coinbase WSが失敗したらBinanceへ切り替えMarket Watchの4行を維持する", async ({ page }) => {
   const runtime = observeRuntime(page);
   await mockTickerWebSocketFallback(page);

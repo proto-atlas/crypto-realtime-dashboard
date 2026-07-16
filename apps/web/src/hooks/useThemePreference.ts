@@ -7,12 +7,17 @@ import {
   writeStoredTheme,
 } from "@/lib/theme";
 
+const browserThemeStorage: Pick<Storage, "getItem" | "setItem"> = {
+  getItem: (key) => window.localStorage.getItem(key),
+  setItem: (key, value) => window.localStorage.setItem(key, value),
+};
+
 export function useThemePreference() {
-  const [theme, setTheme] = useState<ThemePreference>(() => readStoredTheme(window.localStorage));
+  const [theme, setTheme] = useState<ThemePreference>(() => readStoredTheme(browserThemeStorage));
 
   useEffect(() => {
     applyThemePreference(document.documentElement, theme);
-    writeStoredTheme(window.localStorage, theme);
+    writeStoredTheme(browserThemeStorage, theme);
   }, [theme]);
 
   const toggleTheme = useCallback(() => {
