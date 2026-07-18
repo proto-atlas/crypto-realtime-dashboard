@@ -35,6 +35,12 @@ describe("VirtualPortfolioPanel", () => {
     localStorage.clear();
   });
 
+  test("保有状況と操作の見出しを表示する", () => {
+    render(<VirtualPortfolioPanel rows={rows} />);
+
+    expect(screen.getByRole("heading", { name: "保有状況と操作" })).toBeInTheDocument();
+  });
+
   test("初期数量のまま追加実行ボタンを押したら保有数量と更新履歴を表示する", () => {
     render(<VirtualPortfolioPanel rows={rows} />);
 

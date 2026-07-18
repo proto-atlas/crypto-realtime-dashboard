@@ -12,6 +12,12 @@ vi.mock("@/lib/tradeHistory", async (importOriginal) => {
 });
 
 describe("TradeHistoryTable", () => {
+  test("仮想取引データの見出しを表示する", () => {
+    render(<TradeHistoryTable />);
+
+    expect(screen.getByRole("heading", { name: "仮想取引データ" })).toBeInTheDocument();
+  });
+
   test("30件の取引履歴を表示したらaria-rowcountがヘッダー行込みの31になる", () => {
     render(<TradeHistoryTable />);
 

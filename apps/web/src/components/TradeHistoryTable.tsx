@@ -249,7 +249,9 @@ export function TradeHistoryTable() {
     <section className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-col gap-4 border-b border-slate-100 pb-4 xl:flex-row xl:items-start xl:justify-between dark:border-slate-800">
         <div>
-          <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">取引履歴ラボ</h2>
+          <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">
+            仮想取引データ
+          </h2>
           <div className="mt-2 flex flex-wrap gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
             <MetricPill label="総件数" value={integerFormatter.format(summary.totalRows)} />
             <MetricPill label="表示件数" value={integerFormatter.format(filteredRows.length)} />

@@ -98,7 +98,7 @@ export function VirtualPortfolioPanel({ rows }: { rows: readonly MarketRow[] }) 
           <div className="flex items-center gap-2">
             <Activity className="size-5 text-cyan-700 dark:text-cyan-300" aria-hidden="true" />
             <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">
-              仮想ポートフォリオ
+              保有状況と操作
             </h2>
           </div>
           <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
