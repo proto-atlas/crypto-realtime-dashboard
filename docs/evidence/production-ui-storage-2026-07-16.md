@@ -25,7 +25,7 @@ localStorageのgetterが`SecurityError`を返す条件でも、画面を表示�
 - 対象: `https://crypto-realtime-dashboard.pages.dev/`
 - 結果: 5件すべて通過
 
-クリックによる追加、数量入力でのEnter、減らす選択時の保有不足表示、再読み込み後の保存、操作選択状態、390px幅で横スクロールが発生しないことを確認した。各テストでconsole errorとpage errorがないことも確認した。
+クリックによる追加、数量入力でのEnter、減らす選択時の保有不足表示、再読み込み後の保存、操作選択状態、390px幅で横スクロールが発生しないことを確認した。各テストで`console error`と`page error`がないことも確認した。
 
 ### 品質検査
 
@@ -39,14 +39,14 @@ WebSocket継続検査の判定ロジックは4件の単体テストで、正常�
 
 - 方法: PlaywrightのChromiumで公開Pagesを開き、公開BFFのCoinbase/Binance WebSocketへ同時接続して900,000ms観測
 - 対象: `/api/ws/coinbase/ticker`、`/api/ws/binance/ticker`
-- 結果: Coinbase 630件、Binance 901件を受信。観測終了前のcloseは両方0件、errorも両方0件
+- 結果: Coinbase 630件、Binance 901件を受信。観測終了前の`close`イベントと`error`イベントは両方0件
 
 この結果は2026-07-16の15分間に対する確認であり、継続稼働やSLAを保証するものではない。
 
 ## 未確認範囲
 
 - CoinbaseまたはBinance本体の実障害時の切り替え
-- mobile実機での長時間操作
+- モバイル実機での長時間操作
 - スクリーンリーダー実機での読み上げ順序と操作感
 
-実障害の切り替えは、外部サービスを停止させず、Playwrightの疑似接続で決定的に確認している。mobileについてはviewport E2E、アクセシビリティについてはrole、name、pressed状態のE2Eを代替確認としている。
+実障害時の切り替えは、外部サービスを停止させず、Playwrightの疑似接続で同じ条件を再現して確認している。モバイルについては画面幅ごとのE2E、アクセシビリティについては`role`、`name`、`pressed`状態のE2Eを代替確認としている。

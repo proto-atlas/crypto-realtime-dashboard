@@ -5,31 +5,31 @@
 
 ## 1. 初期表示をデモモードにする
 
-初期表示では外部APIを呼ばず、ブラウザ内の決定的なデモデータで画面を表示します。
+初期表示では外部APIを呼ばず、ブラウザ内で毎回同じ内容を生成するデモデータで画面を表示します。
 
-公開URLは検索クローラや偶発的なアクセスも受けるため、初期表示で外部APIへ接続すると、利用者が意図しない時点で外部API呼び出しとWebSocket接続が発生します。そのため、REST連携 / WebSocket連携は明示的な操作で有効化する設計にしています。
+公開URLは検索クローラや偶発的なアクセスも受けるため、初期表示で外部APIへ接続すると、利用者が意図しない時点で外部API呼び出しとWebSocket接続が発生します。そのため、REST連携とWebSocket連携は明示的な操作で有効化する設計にしています。
 
-これにより、キーなしで主要UIを確認できる一方、外部providerのrate limitや一時障害に依存しない入口を維持できます。
+これにより、APIキーなしで主要UIを確認でき、外部データ提供元の呼び出し制限や一時障害にも初期表示を妨げられません。
 
-## 2. API keyはBFF Worker側だけで扱う
+## 2. APIキーはBFF Worker側だけで扱う
 
-CoinGecko Demo API keyはCloudflare Workers BFF側だけで使い、ブラウザへ渡しません。
+CoinGecko Demo APIキーはCloudflare Workers BFF側だけで使い、ブラウザへ渡しません。
 
-ブラウザ側はBFFのREST endpointとWebSocket relayへ接続し、外部API keyやprovider固有の認証情報を直接持たない構成にしています。これにより、UIの公開性とsecretの保護範囲を分けています。
+ブラウザ側はBFFのREST APIとWebSocket中継へ接続し、外部APIキーやデータ提供元の認証情報を直接持ちません。認証情報はBFF側だけで扱います。
 
-ただし、BFFは本番認証の代替ではありません。CORSとRate Limiting bindingは公開URLでの過剰呼び出しを抑える境界であり、ユーザー別認証、権限管理、ユーザー別上限は検証対象外です。
+ただし、BFFは本番認証の代替ではありません。CORSはブラウザからの接続元を制限し、Rate Limiting bindingは公開URLへの過剰な呼び出しを抑えます。ユーザー別認証、権限管理、ユーザー別上限は実装していません。
 
 ## 3. REST連携とWebSocket連携を分ける
 
 REST連携はCoinGecko RESTとCoinbase candlesから、一覧系データとローソク足の初期データを取得します。
 
-WebSocket連携はBFFのWebSocket relayからtick更新を受け取り、マーケット一覧を更新します。Coinbase接続中だけ、同じCoinbase由来の価格を最後のローソク足へ反映します。WebSocket連携でも、ローソク足の初期表示にはCoinbase candlesを使います。
+WebSocket連携はBFFのWebSocket中継からtick更新を受け取り、マーケット一覧を更新します。Coinbase接続中だけ、同じCoinbase由来の価格を最後のローソク足へ反映します。WebSocket連携でも、ローソク足の初期表示にはCoinbaseのローソク足APIを使います。
 
 RESTとWebSocketを分けた理由は、初期表示、履歴足、tick更新で必要なデータの性質が違うためです。WebSocketだけで全状態を作ろうとすると、初期同期や欠落時の扱いが複雑になります。RESTで初期状態を作り、WebSocketで直近だけ更新する方針にしています。
 
 ## 4. Coinbaseを主、Binanceを予備経路にする
 
-WebSocket連携ではCoinbase relayを優先し、Coinbase WebSocketがcloseまたはerrorになった場合にBinance relayへ切り替えます。Binance表示中は30秒ごとにCoinbaseへの復旧接続を試し、有効なtickerを受信してから主経路へ戻します。
+WebSocket連携ではCoinbase中継を優先し、Coinbase WebSocketが切断またはエラーになった場合にBinance中継へ切り替えます。Binance表示中は30秒ごとにCoinbaseへの復旧接続を試し、有効なtickerを受信してから主経路へ戻します。
 
 ローソク足と通常時のtickをCoinbaseに揃えることで、異なる取引所の価格を同じローソク足へ混ぜません。BinanceはCoinbase障害時もマーケット一覧の更新を続ける予備経路とし、Binance価格はCoinbaseローソク足へ反映しません。
 
@@ -37,37 +37,37 @@ Coinbase tickerには24h quote volumeがないため、Volumeは `volume_24h * �
 
 ## 5. マーケット一覧は4資産固定表示にする
 
-マーケット一覧はBTC / ETH / SOL / XRPの4銘柄を固定し、届いたtickだけをlast-known stateへ反映します。銘柄はクリックまたは矢印キーで選択でき、選択結果をURLへ反映します。
+マーケット一覧はBTC、ETH、SOL、XRPの4銘柄を固定し、届いたtickだけを直近の受信値へ反映します。銘柄はクリックまたは矢印キーで選択でき、選択結果をURLへ反映します。
 
 ## 6. 目的ごとに画面を分ける
 
 マーケット監視、仮想保有、10万件テーブルを同じページへ置かず、`/market`、`/portfolio`、`/history`へ分けます。各画面の主目的を一つに絞り、デスクトップは上部ナビゲーション、モバイルは下部ナビゲーションから移動します。
 
-WebSocket payloadは常に全銘柄を含むとは限らないため、最新payloadに含まれる銘柄だけで行を作ると、WebSocket連携中に表示行数が増減します。監視UIとしては、同じ銘柄を同じ順番で見続けられる方が状態変化を読み取りやすいため、主要4資産の固定表示にしました。
+WebSocketの受信データは常に全銘柄を含むとは限らないため、届いた銘柄だけで行を作ると、WebSocket連携中に表示行数が増減します。同じ銘柄を同じ順番で見続けられるよう、主要4資産を固定表示にしました。
 
 現在の主経路・予備経路と検証範囲は [WebSocket主経路・予備経路の確認記録](evidence/websocket-primary-fallback-2026-07-15.md) に記録しています。4資産固定表示の導入経緯は [2026-05-17の表示安定化記録](evidence/websocket-fallback-stability-2026-05-17.md) に分けています。
 
-## 7. Cacheはfail-openにする
+## 7. キャッシュ障害時も上流API取得を試す
 
-Workers KVのcache read/writeが失敗しても、BFFは可能な限り上流API取得へ進みます。
+Workers KVのキャッシュ読み書きが失敗しても、BFFは上流APIからの取得を試します。
 
-このダッシュボードでは、cacheは表示継続と外部API呼び出し削減のための補助です。cache障害を理由にUI全体を止めるより、上流取得できる場合は表示を続ける方が体験として自然です。
+キャッシュは、表示継続と外部API呼び出し削減のために使います。キャッシュが使えなくても上流APIから取得できた場合は表示を続けます。
 
-ただし、外部API自体のrate limitや障害までは吸収できません。REST連携 / WebSocket連携が使えない場合でも、デモモードで主要UIを確認できるようにしています。
+ただし、外部API自体の呼び出し制限や障害までは吸収できません。REST連携とWebSocket連携が使えない場合も、デモモードで主要UIを確認できます。
 
 ## 8. Rate Limiting bindingは過剰呼び出し抑制として扱う
 
-CoinGecko RESTにはCloudflare WorkersのRate Limiting bindingを設定しています。現在の設定は `20 requests / 60 seconds` です。
+CoinGecko RESTにはCloudflare WorkersのRate Limiting bindingを設定しています。現在の設定は60秒間に20回です。
 
-これは公開URLでの過剰呼び出し抑制であり、本番認証や決定的なIP単位上限ではありません。CloudflareのRate Limitingはpermissive / eventually consistentな挙動を持つため、短時間バーストで必ず429になるとは主張しません。
+これは公開URLでの過剰呼び出し抑制であり、本番認証や確実なIP単位上限ではありません。[Cloudflareの公式資料](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/#accuracy)でも、Rate Limiting APIは正確な回数集計に使う仕組みではないと説明されています。そのため、短時間に呼び出しが集中した場合に必ず429になるとは主張しません。
 
-本番サービスとして厳密なquotaが必要な場合は、Durable ObjectやDBを使ったapplication-levelのtoken bucketを別途設計する前提です。
+厳密な上限が必要な場合は、Durable ObjectやDBを使ったtoken bucketを別に実装する必要があります。
 
-## 9. 10万件テーブルはブラウザ内の決定的データで扱う
+## 9. 10万件テーブルのデータはブラウザ内で生成する
 
 取引履歴ラボは、10万件の仮想取引履歴をブラウザ内で生成し、TanStack TableとTanStack Virtualで表示します。
 
-大量テーブルの操作性を見せるために、実APIやDBへ依存させる必要はありません。データを決定的に生成することで、検索、フィルタ、ソート、列固定、列幅リサイズ、仮想スクロールのUI挙動を外部状態なしで確認できます。
+大量テーブルの操作確認には、実APIやDBを使いません。ブラウザ内で毎回同じデータを生成し、検索、絞り込み、並べ替え、列固定、列幅リサイズ、仮想スクロールを同じ条件で確認できます。
 
 これは取引履歴の実データや監査ログではなく、フロントエンド性能と操作性を示すためのデモデータです。
 
@@ -79,34 +79,34 @@ CoinGecko RESTにはCloudflare WorkersのRate Limiting bindingを設定してい
 
 追加・減らすは仮想保有の操作種別として選択し、実行ボタンには銘柄、数量、操作を表示します。選択と実行を分けつつ、実行内容がボタンだけで分かるようにしています。フォーム送信はクリックとEnterの両方に対応します。
 
-端末共有、プライベートブラウジング、ブラウザstorage制限下での永続性は主張しません。
+端末共有、プライベートブラウジング、localStorage制限下での永続性は主張しません。
 
-## 11. Theme設定は補助機能として扱う
+## 11. テーマ設定は補助機能として扱う
 
-dark/light themeはlocalStorageへ保存し、初期描画前に小さなscriptで `html.dark` へ反映します。
+ダークテーマとライトテーマの設定はlocalStorageへ保存し、初期描画前に小さなスクリプトで`html.dark`へ反映します。
 
-React読み込み後にthemeを適用すると、初期表示で一瞬だけ別themeが見える可能性があります。そのため、HTML側の初期化scriptとReact hookで同じstorage keyを使います。
+React読み込み後にテーマを適用すると、初期表示で一瞬だけ別のテーマが見える可能性があります。そのため、HTML側の初期化スクリプトとReactフックで同じlocalStorageキーを使います。
 
-storageの読み書きに失敗した場合でも、描画自体は止めません。theme永続化は補助機能であり、マーケットデータ表示や操作を止める理由にしない判断です。
+localStorageの読み書きに失敗した場合も、描画自体は止めません。テーマ設定の保存は補助機能であり、マーケットデータ表示や操作は継続します。
 
 ## 12. テストは層ごとに役割を分ける
 
-BFF、lib、hooksは外部データの正規化、fallback、状態遷移を単体テストで確認します。
+BFF、ライブラリ、フックは、外部データの正規化、自動切り替え、状態遷移を単体テストで確認します。
 
-UIはdashboard統合テストと主要component testで、壊れたら気付ける範囲に絞ります。Playwright E2Eはデモモード中心にし、WebSocket切り替えは疑似接続で決定的に確認します。公開環境では、トップ画面、Coinbaseローソク足5種類、Coinbase/Binance WebSocketの初回受信、仮想ポートフォリオの主要操作を日次または手動のworkflowで確認します。
+UIはダッシュボード統合テストと主要コンポーネントのテストを置きます。Playwright E2Eはデモモードを中心にし、WebSocket切り替えは疑似接続で同じ条件を再現して確認します。公開環境では、トップ画面、Coinbaseローソク足5種類、CoinbaseとBinanceのWebSocket初回受信、仮想ポートフォリオの主要操作を日次または手動のワークフローで確認します。
 
-この方針は、通常のCIで外部providerの可用性をテスト成功条件にしないためです。外部WebSocketの実障害、長時間稼働、外部providerのSLA、Rate Limitingの429発火までは主張しません。
+通常のCIでは、外部データ提供元の稼働状態をテスト成功条件にしません。外部WebSocketの実障害、長時間稼働、外部データ提供元のSLA、Rate Limitingの429発火までは主張しません。
 
-## 13. 主張範囲をUIと境界設計に置く
+## 13. 実装範囲と対象外を明記する
 
-このリポジトリで主張するのは、リアルタイムUI、BFF境界、WebSocket fallback、大量テーブル、localStorage状態管理、テストと検証証跡を設計・実装できることです。
+実装範囲は、リアルタイムUI、BFF、WebSocket自動切り替え、10万件テーブル、localStorage状態管理、テストと検証記録です。
 
 この文書で扱わない範囲:
 
 - 実取引機能
 - 投資助言、売買推奨、収益性
 - 取引所アカウント連携、ウォレット接続、送金
-- 本番認証、ユーザー別quota、per-user WebSocket接続制限
-- 外部providerの品質、SLA、長時間稼働保証
-- Rate Limiting bindingによるdeterministicな429発火保証
+- 本番認証、ユーザー別上限、ユーザー単位のWebSocket接続制限
+- 外部データ提供元の品質、SLA、長時間稼働保証
+- Rate Limiting bindingによる確実な429発火保証
 - localStorageデータの端末間同期や永続保証

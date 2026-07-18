@@ -10,8 +10,8 @@
 
 - 詳細: [公開UI・保存制限の確認記録](evidence/production-ui-storage-2026-07-16.md)
 - 検証: `pnpm check`、ローカルPlaywright E2E 13件、公開環境Playwright E2E 5件
-- 公開WebSocket確認: ChromiumでCoinbase/Binanceへ同時接続し、15分間で630件/901件を受信。途中close 0件、error 0件
-- 未確認範囲: 外部WebSocketの実障害、mobile実機、スクリーンリーダー実機
+- 公開WebSocket確認: ChromiumでCoinbaseとBinanceへ同時接続し、15分間でCoinbase 630件、Binance 901件を受信。途中の`close`イベントと`error`イベントは0件
+- 未確認範囲: 外部WebSocketの実障害、モバイル実機、スクリーンリーダー実機
 
 ## 2026-07-15 仮想ポートフォリオの操作を明確化
 
@@ -19,11 +19,11 @@
 
 - 詳細: [仮想ポートフォリオ操作の確認記録](evidence/virtual-portfolio-operation-2026-07-15.md)
 - 検証: `pnpm check`、Playwright E2E 11件
-- 未確認範囲: スクリーンリーダー実機、mobile実機での長時間操作
+- 未確認範囲: スクリーンリーダー実機、モバイル実機での長時間操作
 
 ## 2026-07-15 WebSocketの主経路と予備経路を整理
 
-ローソク足と通常時のtickをCoinbaseへ揃え、Coinbase接続断またはerror時だけBinanceへ切り替える構成にした。Binance表示中は30秒ごとにCoinbaseを再確認し、有効なtickerを受信した後に主経路へ戻す。
+ローソク足と通常時のtickをCoinbaseへ揃え、Coinbase接続断またはエラー時だけBinanceへ切り替える構成にした。Binance表示中は30秒ごとにCoinbaseを再確認し、有効なtickerを受信した後に主経路へ戻す。
 
 - 詳細: [WebSocket主経路・予備経路の確認記録](evidence/websocket-primary-fallback-2026-07-15.md)
 - 検証: 単体テスト、Playwright E2E 10件、GitHub Actions CI
@@ -32,8 +32,8 @@
 
 ## 2026-05-17 Market Watchの表示安定化
 
-WebSocket連携中にMarket Watchのasset数が揺れる挙動を、4資産固定表示とlast-known stateで安定化した。
+WebSocket連携中にMarket Watchの表示銘柄数が揺れる挙動を、4資産固定表示と直近受信値の保持で直した。
 
 - 詳細: [2026-05-17の表示安定化記録](evidence/websocket-fallback-stability-2026-05-17.md)
-- 現在との関係: 4資産固定表示とlast-known stateは継続。プロバイダー順序は現在の記録を参照
+- 現在との関係: 4資産固定表示と直近受信値の保持は継続。接続先の優先順は現在の記録を参照
 - 未確認範囲: 外部WebSocketの実障害、長時間接続、負荷試験

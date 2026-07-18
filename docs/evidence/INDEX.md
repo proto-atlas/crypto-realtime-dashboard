@@ -1,13 +1,13 @@
 # 検証記録の一覧
 
-Crypto Real-time Dashboardの検証記録をまとめます。各記録は、その時点の構成、外部APIの状態、対象データに対する確認結果です。外部API、WebSocket中継、Cloudflare runtimeの継続稼働を保証するものではありません。
+Crypto Real-time Dashboardの検証記録をまとめます。各記録は、その時点の構成、外部APIの状態、対象データに対する確認結果です。外部API、WebSocket中継、Cloudflare実行環境の継続稼働を保証するものではありません。
 
 ## 個別記録
 
 - [2026-07-16の公開UI・保存制限確認](production-ui-storage-2026-07-16.md): 公開UIの主要操作、localStorage制限時の操作継続、レスポンシブ表示を確認。
 - [現在のWebSocket経路の確認記録](websocket-primary-fallback-2026-07-15.md): Coinbaseを主経路、Binanceを予備経路とする切り替えを単体テストとPlaywright E2Eで確認。
 - [仮想ポートフォリオ操作の確認記録](virtual-portfolio-operation-2026-07-15.md): 操作選択、動的な実行ボタン、クリック・Enter操作を確認。
-- [2026-05-17の表示安定化記録](websocket-fallback-stability-2026-05-17.md): Market Watchを4資産固定表示へ変更した当時の記録。現在のプロバイダー順序の根拠には使用しない。
+- [2026-05-17の表示安定化記録](websocket-fallback-stability-2026-05-17.md): Market Watchを4資産固定表示へ変更した当時の記録。現在の接続先の優先順を示す記録ではない。
 - [信頼性改善ログ](../reliability-log.md): WebSocket自動切り替えまわりの改善履歴。
 
 ## 2026-07-13のPages反映
@@ -25,7 +25,7 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 - 対象: Playwright E2E 10件。
 - 結果: 10件すべて通過。
 - 方法: OSV-Scanner 2.4.0で`pnpm-lock.yaml`を検査。
-- 対象: lockfile内の339 packages。
+- 対象: lockfile内の339パッケージ。
 - 結果: 既知の脆弱性は検出されず。
 - 方法: `wrangler deploy --dry-run`を実行。
 - 対象: BFF Worker、Durable Objects 2件、KV、Rate Limiting binding。
@@ -38,7 +38,7 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 - 結果: Biomeはshared-types 4ファイル、BFF 32ファイル、Web 81ファイルを通過。検証スクリプト8件、shared-types 7件、BFF 72件、Web 129件の計216件が通過し、typecheckとbuildも通過。
 - 方法: `pnpm e2e`を実行し、3画面の移動、銘柄のクリック・矢印キー操作、ローソク足canvas、WebSocket予備接続、375px・390px・768px、desktop表示後の390pxリサイズを確認。
 - 結果: Playwright E2E 15件が通過。
-- 方法: 3画面UIを公開したcommit `b4392f6d033444f3928bac45d6a7d6cfa4a9c55e`の[CI run 29631622055](https://github.com/proto-atlas/crypto-realtime-dashboard/actions/runs/29631622055)でverifyとCloudflare反映を確認。
+- 方法: 見出しと公開文書を更新したcommit `f51fac6bff4e4a761ed80c25a5edfbeb4881bc00`の[CI run 29646781003](https://github.com/proto-atlas/crypto-realtime-dashboard/actions/runs/29646781003)で検証とCloudflare反映を確認。
 - 結果: 対象commitのlint、typecheck、test、build、E2E、Worker反映、Pages反映が成功。
 - 方法: 公開URLの`/market`、`/portfolio`、`/history`へ直接アクセスし、`pnpm e2e:production`を実行。
 - 結果: 3ルートがHTTP 200を返し、公開環境E2E 5件が通過。
@@ -68,9 +68,9 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 | ケース | 実装上の扱い | 見える結果 |
 |---|---|---|
 | 外部APIを呼ばずに見たい | 初期表示をデモモードにする | 固定データで主要UIを確認できる |
-| CoinGecko RESTが失敗する | BFFでエラーを整形し、cacheを補助として使う | UI全体を止めず、状態表示で分かる |
+| CoinGecko RESTが失敗する | BFFでエラーを整形し、キャッシュを補助として使う | UI全体を止めず、状態表示で分かる |
 | Coinbase WebSocketが閉じる | Binance WebSocketへ切り替える | 接続状態に予備経路が出る |
-| API keyを扱う | BFF Worker側だけで保持する | ブラウザにはkeyを渡さない |
+| APIキーを扱う | BFF Worker側だけで保持する | ブラウザにはキーを渡さない |
 | 実取引と誤解される | 実取引、送金、ウォレット接続、投資助言は扱わないと明記する | 学習用のマーケットデータ表示として読める |
 
 ## この記録で確認していないこと
@@ -79,6 +79,6 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 - 外部APIの長時間稼働
 - WebSocket中継の長時間稼働
 - Rate Limiting bindingによる短時間バースト時の429発火
-- 本番認証やユーザー別quota
-- mobile実機での長時間操作感
+- 本番認証やユーザー別上限
+- モバイル実機での長時間操作感
 - スクリーンリーダー実機確認
