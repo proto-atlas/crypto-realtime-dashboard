@@ -20,8 +20,8 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 
 - 方法: `pnpm check`を実行し、Biome、TypeScript、Node.jsスクリプトテスト、Vitest、production buildを確認。
 - 対象: shared-types、BFF、Web、ローソク足取得スクリプト。
-- 結果: Biomeはshared-types 4ファイル、BFF 32ファイル、Web 71ファイルを通過。Node.jsスクリプトテスト4件、shared-types 7件、BFF 72件、Web 109件の計192件が通過し、typecheckとbuildも通過。
-- 方法: `pnpm e2e`を実行し、デモ操作、ローソク足canvas、WebSocket予備接続、375px・390px・768px、desktop表示後の390pxリサイズを確認。
+- 結果: Biomeはshared-types 4ファイル、BFF 32ファイル、Web 81ファイルを通過。Node.jsスクリプトテスト8件、shared-types 7件、BFF 72件、Web 127件の計214件が通過し、typecheckとbuildも通過。
+- 方法: `pnpm e2e`を実行し、3画面の移動、銘柄のクリック・矢印キー操作、ローソク足canvas、WebSocket予備接続、375px・390px・768px、desktop表示後の390pxリサイズを確認。
 - 対象: Playwright E2E 10件。
 - 結果: 10件すべて通過。
 - 方法: OSV-Scanner 2.4.0で`pnpm-lock.yaml`を検査。
@@ -45,7 +45,7 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 |---|---|---|
 | `pnpm check` | 通過 | lint、typecheck、test、build |
 | Vitest | 通過 | shared-types、BFF、Webの単体・統合テスト |
-| Playwright E2E | 13件通過 | デモ操作、ローソク足canvas、仮想ポートフォリオのクリック・Enter操作、localStorage制限時の操作、Coinbase疑似失敗時のBinance切り替え、レスポンシブ表示 |
+| Playwright E2E | 15件通過 | 3画面の移動、銘柄選択、ローソク足canvas、仮想ポートフォリオ、10万件テーブル、Coinbase疑似失敗時のBinance切り替え、レスポンシブ表示 |
 | 公開環境E2E | 5件通過 | クリック・Enter・減少・再読み込み保持、操作状態、390px表示 |
 | 公開環境確認 | 通過 | トップ画面のHTTP 200、Coinbaseローソク足5種類の各120本、OHLCV、時刻順序、足間隔 |
 | WebSocket自動切り替え | 通過 | 疑似接続でCoinbaseからBinanceへ切り替え、30秒後のCoinbase有効ticker受信後に復帰 |

@@ -20,7 +20,7 @@ Cloudflare Workers BFF
   +-- Public market data APIs
 ```
 
-- `apps/web`: React + ViteのブラウザUIです。Dashboard、Market Watch、ローソク足チャート、取引履歴ラボ、仮想ポートフォリオ、dark/light theme切替を表示します。
+- `apps/web`: React + ViteのブラウザUIです。マーケット、仮想ポートフォリオ、取引履歴ラボの3画面と、テーマ切替、データモード切替を表示します。
 - `apps/bff`: Hono + Cloudflare WorkersのBFFです。外部API keyをブラウザへ渡さず、REST proxy、Rate Limiting、WebSocket relayを担当します。
 - `packages/shared-types`: Web/BFFで共有する型定義です。
 - Cloudflare Pages: Web UIの静的配信を担当します。
@@ -32,7 +32,9 @@ Cloudflare Workers BFF
 
 ### デモモード
 
-初期表示はデモモードです。ブラウザ内の決定的なfixture generatorでMarket Watch、ローソク足チャート、取引履歴ラボ、仮想ポートフォリオを表示します。初期表示では外部APIを呼びません。
+初期表示はデモモードです。ブラウザ内の決定的なfixture generatorでマーケット一覧、ローソク足チャート、取引履歴ラボ、仮想ポートフォリオを表示します。初期表示では外部APIを呼びません。
+
+ブラウザUIは`/market`、`/portfolio`、`/history`へ分けています。共通のMarketDataProviderがデータモードと4銘柄の市場データを保持するため、画面を移動しても選択したデータモードを維持します。`/market`では選択銘柄と時間足をsearch parameterへ保存します。不正または未対応の値はBTCと1分足へ戻します。
 
 ### REST連携
 
@@ -70,8 +72,12 @@ dark/light themeは、Tailwind CSSのdark variantとブラウザのlocalStorage�
 
 ## 主要ファイル
 
-- `apps/web/src/pages/dashboard.tsx`: ダッシュボード画面の状態接続とレイアウト。
-- `apps/web/src/components/dashboard/*`: ダッシュボード内の主要表示部品。
+- `apps/web/src/router.tsx`: 3画面のルート定義と遅延読み込み。
+- `apps/web/src/contexts/MarketDataContext.tsx`: 3画面で共有するデータモードと市場データ。
+- `apps/web/src/pages/dashboard.tsx`: マーケット画面の選択銘柄、チャート、市場詳細の接続。
+- `apps/web/src/pages/portfolio.tsx`: 仮想ポートフォリオ画面。
+- `apps/web/src/pages/history.tsx`: 取引履歴ラボ画面。
+- `apps/web/src/components/dashboard/*`: マーケット、チャート、仮想ポートフォリオの表示部品。
 - `apps/web/src/hooks/useThemePreference.ts`: theme設定のlocalStorage永続化。
 - `apps/web/src/lib/theme.ts`: theme設定の読み書きとDOM反映。
 - `apps/web/src/stores/virtualPortfolioStore.ts`: 仮想ポートフォリオのlocalStorage永続化。
@@ -100,7 +106,7 @@ dark/light themeは、Tailwind CSSのdark variantとブラウザのlocalStorage�
 
 ## 検証の位置づけ
 
-`pnpm check`でBiome、typecheck、Node.jsスクリプトテスト、Vitest、buildをまとめて確認します。`pnpm e2e`はデモモードの主要操作、ローソク足canvas、仮想ポートフォリオのクリック・Enter操作、Coinbase疑似失敗時のBinance切り替え、レスポンシブ表示を確認します。
+`pnpm check`でBiome、typecheck、Node.jsスクリプトテスト、Vitest、buildをまとめて確認します。`pnpm e2e`は3画面の移動、銘柄のクリック・キーボード操作、ローソク足canvas、仮想ポートフォリオ、10万件テーブル、Coinbase疑似失敗時のBinance切り替え、レスポンシブ表示を確認します。
 
 公開環境確認workflowは、トップ画面のHTTP 200、Coinbaseローソク足5種類、Coinbase/Binance WebSocketの初回データ受信、公開UIのクリック・Enter・減少・再読み込み保持・390px表示を確認します。外部WebSocketの実障害や長時間接続、Rate Limiting bindingの短時間バースト時の429発火は自動確認の対象外です。
 

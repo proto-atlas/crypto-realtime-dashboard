@@ -23,7 +23,7 @@ CoinGecko Demo API keyはCloudflare Workers BFF側だけで使い、ブラウザ
 
 REST連携はCoinGecko RESTとCoinbase candlesから、一覧系データとローソク足の初期データを取得します。
 
-WebSocket連携はBFFのWebSocket relayからtick更新を受け取り、Market Watchを更新します。Coinbase接続中だけ、同じCoinbase由来の価格を最後のローソク足へ反映します。WebSocket連携でも、ローソク足の初期表示にはCoinbase candlesを使います。
+WebSocket連携はBFFのWebSocket relayからtick更新を受け取り、マーケット一覧を更新します。Coinbase接続中だけ、同じCoinbase由来の価格を最後のローソク足へ反映します。WebSocket連携でも、ローソク足の初期表示にはCoinbase candlesを使います。
 
 RESTとWebSocketを分けた理由は、初期表示、履歴足、tick更新で必要なデータの性質が違うためです。WebSocketだけで全状態を作ろうとすると、初期同期や欠落時の扱いが複雑になります。RESTで初期状態を作り、WebSocketで直近だけ更新する方針にしています。
 
@@ -31,19 +31,23 @@ RESTとWebSocketを分けた理由は、初期表示、履歴足、tick更新で
 
 WebSocket連携ではCoinbase relayを優先し、Coinbase WebSocketがcloseまたはerrorになった場合にBinance relayへ切り替えます。Binance表示中は30秒ごとにCoinbaseへの復旧接続を試し、有効なtickerを受信してから主経路へ戻します。
 
-ローソク足と通常時のtickをCoinbaseに揃えることで、異なる取引所の価格を同じローソク足へ混ぜません。BinanceはCoinbase障害時もMarket Watchの更新を続ける予備経路とし、Binance価格はCoinbaseローソク足へ反映しません。
+ローソク足と通常時のtickをCoinbaseに揃えることで、異なる取引所の価格を同じローソク足へ混ぜません。BinanceはCoinbase障害時もマーケット一覧の更新を続ける予備経路とし、Binance価格はCoinbaseローソク足へ反映しません。
 
 Coinbase tickerには24h quote volumeがないため、Volumeは `volume_24h * 直近price` の表示用近似値として扱います。外部データ提供元ごとのデータ差分を完全に揃えることは主張しません。
 
-## 5. Market Watchは4資産固定表示にする
+## 5. マーケット一覧は4資産固定表示にする
 
-Market WatchはBTC / ETH / SOL / XRPの4行を固定し、届いたtickだけをlast-known stateへ反映します。
+マーケット一覧はBTC / ETH / SOL / XRPの4銘柄を固定し、届いたtickだけをlast-known stateへ反映します。銘柄はクリックまたは矢印キーで選択でき、選択結果をURLへ反映します。
+
+## 6. 目的ごとに画面を分ける
+
+マーケット監視、仮想保有、10万件テーブルを同じページへ置かず、`/market`、`/portfolio`、`/history`へ分けます。各画面の主目的を一つに絞り、デスクトップは上部ナビゲーション、モバイルは下部ナビゲーションから移動します。
 
 WebSocket payloadは常に全銘柄を含むとは限らないため、最新payloadに含まれる銘柄だけで行を作ると、WebSocket連携中に表示行数が増減します。監視UIとしては、同じ銘柄を同じ順番で見続けられる方が状態変化を読み取りやすいため、主要4資産の固定表示にしました。
 
 現在の主経路・予備経路と検証範囲は [WebSocket主経路・予備経路の確認記録](evidence/websocket-primary-fallback-2026-07-15.md) に記録しています。4資産固定表示の導入経緯は [2026-05-17の表示安定化記録](evidence/websocket-fallback-stability-2026-05-17.md) に分けています。
 
-## 6. Cacheはfail-openにする
+## 7. Cacheはfail-openにする
 
 Workers KVのcache read/writeが失敗しても、BFFは可能な限り上流API取得へ進みます。
 
@@ -51,7 +55,7 @@ Workers KVのcache read/writeが失敗しても、BFFは可能な限り上流API
 
 ただし、外部API自体のrate limitや障害までは吸収できません。REST連携 / WebSocket連携が使えない場合でも、デモモードで主要UIを確認できるようにしています。
 
-## 7. Rate Limiting bindingは過剰呼び出し抑制として扱う
+## 8. Rate Limiting bindingは過剰呼び出し抑制として扱う
 
 CoinGecko RESTにはCloudflare WorkersのRate Limiting bindingを設定しています。現在の設定は `20 requests / 60 seconds` です。
 
@@ -59,7 +63,7 @@ CoinGecko RESTにはCloudflare WorkersのRate Limiting bindingを設定してい
 
 本番サービスとして厳密なquotaが必要な場合は、Durable ObjectやDBを使ったapplication-levelのtoken bucketを別途設計する前提です。
 
-## 8. 10万件テーブルはブラウザ内の決定的データで扱う
+## 9. 10万件テーブルはブラウザ内の決定的データで扱う
 
 取引履歴ラボは、10万件の仮想取引履歴をブラウザ内で生成し、TanStack TableとTanStack Virtualで表示します。
 
@@ -67,7 +71,7 @@ CoinGecko RESTにはCloudflare WorkersのRate Limiting bindingを設定してい
 
 これは取引履歴の実データや監査ログではなく、フロントエンド性能と操作性を示すためのデモデータです。
 
-## 9. 仮想ポートフォリオはlocalStorageに限定する
+## 10. 仮想ポートフォリオはlocalStorageに限定する
 
 仮想ポートフォリオは、Zustand persistでlocalStorageへ保存します。localStorageへのアクセスがブラウザ設定で拒否された場合は、画面操作を継続し、再読み込み後の保持だけを行いません。サーバー側保存、ユーザーアカウント、ログイン、取引所アカウント連携は扱いません。
 
@@ -77,7 +81,7 @@ CoinGecko RESTにはCloudflare WorkersのRate Limiting bindingを設定してい
 
 端末共有、プライベートブラウジング、ブラウザstorage制限下での永続性は主張しません。
 
-## 10. Theme設定は補助機能として扱う
+## 11. Theme設定は補助機能として扱う
 
 dark/light themeはlocalStorageへ保存し、初期描画前に小さなscriptで `html.dark` へ反映します。
 
@@ -85,7 +89,7 @@ React読み込み後にthemeを適用すると、初期表示で一瞬だけ別t
 
 storageの読み書きに失敗した場合でも、描画自体は止めません。theme永続化は補助機能であり、マーケットデータ表示や操作を止める理由にしない判断です。
 
-## 11. テストは層ごとに役割を分ける
+## 12. テストは層ごとに役割を分ける
 
 BFF、lib、hooksは外部データの正規化、fallback、状態遷移を単体テストで確認します。
 
@@ -93,7 +97,7 @@ UIはdashboard統合テストと主要component testで、壊れたら気付け�
 
 この方針は、通常のCIで外部providerの可用性をテスト成功条件にしないためです。外部WebSocketの実障害、長時間稼働、外部providerのSLA、Rate Limitingの429発火までは主張しません。
 
-## 12. 主張範囲をUIと境界設計に置く
+## 13. 主張範囲をUIと境界設計に置く
 
 このリポジトリで主張するのは、リアルタイムUI、BFF境界、WebSocket fallback、大量テーブル、localStorage状態管理、テストと検証証跡を設計・実装できることです。
 

@@ -14,7 +14,7 @@ Crypto Real-time Dashboardは、暗号資産の公開マーケットデータを
 
 ## 短時間確認ガイド
 
-30秒で見る場合は、公開URLを開き、デモモードのMarket Watch、ローソク足チャート、10万件の仮想取引履歴、仮想ポートフォリオを確認してください。初期表示では外部APIを呼びません。
+30秒で見る場合は、公開URLを開き、マーケット画面で銘柄を切り替えてローソク足チャートを確認してください。次に下部ナビゲーションまたは上部ナビゲーションから、仮想ポートフォリオと取引履歴ラボへ移動できます。初期表示では外部APIを呼びません。
 
 REST連携やWebSocket連携を選ぶと、BFF Worker経由でCoinGecko、Binance、Coinbaseの公開マーケットデータへ接続します。外部APIやWebSocketは提供元とネットワーク状態に依存するため、長時間稼働やSLAは主張しません。
 
@@ -22,8 +22,8 @@ REST連携やWebSocket連携を選ぶと、BFF Worker経由でCoinGecko、Binanc
 
 ## 主な流れ
 
-- デモモードで、外部APIを呼ばずにダッシュボードを表示する。
-- Market Watchで価格、変化率、出来高、接続状態を確認する。
+- デモモードで、外部APIを呼ばずに3つの画面を表示する。
+- マーケット画面でBTC、ETH、SOL、XRPを選び、価格、変化率、出来高、データ鮮度、接続状態を確認する。
 - REST連携で、BFF Worker経由のREST API取得に切り替える。
 - WebSocket連携で、WebSocket中継による価格更新に切り替える。
 - WebSocket連携はCoinbaseを主経路とし、接続できない場合はBinanceへ切り替える。
@@ -42,15 +42,17 @@ REST連携やWebSocket連携を選ぶと、BFF Worker経由でCoinGecko、Binanc
 
 ## 画面
 
-![UI挙動紹介](docs/images/crypto-realtime-dashboard-demo.gif)
+- `/market`：マーケット一覧、選択銘柄の価格、ローソク足チャート、市場詳細を表示します。選択銘柄と時間足はURLへ保存されます。
+- `/portfolio`：仮想保有の追加と減少、評価額、含み損益を表示します。
+- `/history`：10万件の仮想取引履歴を検索、絞り込み、並べ替え、仮想スクロールで表示します。
 
-このGIFは、UIの操作導線を短く見せるための紹介素材です。外部APIの長時間稼働、呼び出し回数制限で429が出ること、投資判断の有効性を証明するものではありません。
+デスクトップではマーケット一覧、チャート、市場詳細を3列で表示します。モバイルではチャートを先に表示し、マーケット一覧を横スクロール、主要画面の移動を下部ナビゲーションで行います。
 
-![ダッシュボード概要](docs/images/dashboard-overview.png)
+![マーケット画面](docs/images/dashboard-overview.png)
 
-![仮想ポートフォリオ](docs/images/virtual-portfolio.png)
+![仮想ポートフォリオ画面](docs/images/virtual-portfolio.png)
 
-![モバイル表示](docs/images/mobile-dashboard.png)
+![モバイルのマーケット画面](docs/images/mobile-dashboard.png)
 
 ## ドキュメント
 
@@ -64,8 +66,8 @@ REST連携やWebSocket連携を選ぶと、BFF Worker経由でCoinGecko、Binanc
 
 主な検証記録は [docs/evidence/INDEX.md](docs/evidence/INDEX.md) から確認できます。
 
-- `pnpm check`: Biome、typecheck、Node.jsスクリプトテスト、Vitest計192件、buildが成功
-- Playwright E2E: デモ操作、ローソク足canvas、仮想ポートフォリオのクリック・Enter操作、localStorage制限時の操作、Coinbase疑似失敗時のBinance切り替え、375px・390px・768px表示を含む13件が成功
+- `pnpm check`: Biome、typecheck、検証スクリプトとVitestの計214件、buildが成功
+- Playwright E2E: 3画面の移動、銘柄のクリック・キーボード操作、ローソク足canvas、仮想ポートフォリオ、10万件テーブル、Coinbase疑似失敗時のBinance切り替え、375px・390px・768px表示を含む15件が成功
 - 公開環境E2E: 仮想ポートフォリオのクリック・Enter・減少・再読み込み保持、操作状態、390px表示を含む5件が成功
 - 公開環境API確認: トップ画面がHTTP 200を返し、Coinbaseローソク足の`1m`、`5m`、`15m`、`1h`、`1d`で各120本のOHLCVと時刻間隔を確認
 - Lighthouse: 2026-05-07時点の手元計測を参考値として確認
