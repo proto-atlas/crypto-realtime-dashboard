@@ -68,8 +68,8 @@ test("公開環境の390px幅で仮想ポートフォリオを横スクロール
 });
 
 async function openResetDashboard(page: Page) {
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: "公開マーケットデータ監視UI" })).toBeVisible();
+  await page.goto("/portfolio");
+  await expect(page.getByRole("heading", { level: 1, name: "仮想ポートフォリオ" })).toBeVisible();
   await page.getByRole("button", { name: "初期化" }).click();
   await expect(page.getByText("仮想ポートフォリオを初期化しました。")).toBeVisible();
 }

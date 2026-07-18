@@ -6,17 +6,19 @@ type RuntimeObservation = {
   apiRequests: string[];
 };
 
-test("デモモード初期表示では主要パネルを表示し外部APIを呼ばない", async ({ page }) => {
+test("デモモード初期表示ではマーケット画面へ移動し外部APIを呼ばない", async ({ page }) => {
   const runtime = observeRuntime(page);
 
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "公開マーケットデータ監視UI" })).toBeVisible();
-  await expect(page.getByText("固定データ / デモ")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Market Watch" })).toBeVisible();
+  await expect(page).toHaveURL(/\/market\?asset=BTC&interval=1m/);
+  await expect(page.getByRole("heading", { name: "マーケット概要" })).toBeVisible();
+  await expect(page.getByText(/現在のデータ:\s*デモ/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "マーケット一覧" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "BTC/USD ローソク足" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Connection Status" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "取引履歴ラボ" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "市場詳細" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "仮想ポートフォリオ" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "取引履歴ラボ" }).first()).toBeVisible();
   expect(runtime.apiRequests).toEqual([]);
   expect(runtime.consoleErrors).toEqual([]);
   expect(runtime.pageErrors).toEqual([]);
@@ -30,6 +32,22 @@ test("デモモード初期表示でローソク足チャートのcanvasを描�
   await expect(chart.locator("canvas").first()).toBeVisible();
 });
 
+test("主要ナビゲーションで3画面を順に移動できる", async ({ page }) => {
+  await page.goto("/market");
+
+  await page.getByRole("link", { name: "仮想ポートフォリオ" }).first().click();
+  await expect(page).toHaveURL(/\/portfolio$/);
+  await expect(page.getByRole("heading", { level: 1, name: "仮想ポートフォリオ" })).toBeVisible();
+
+  await page.getByRole("link", { name: "取引履歴ラボ" }).first().click();
+  await expect(page).toHaveURL(/\/history$/);
+  await expect(page.getByRole("heading", { level: 1, name: "取引履歴ラボ" })).toBeVisible();
+
+  await page.getByRole("link", { name: "マーケット" }).first().click();
+  await expect(page).toHaveURL(/\/market/);
+  await expect(page.getByRole("heading", { level: 1, name: "マーケット概要" })).toBeVisible();
+});
+
 test("テーマ切替はdark表示を適用しリロード後も保持する", async ({ page }) => {
   const runtime = observeRuntime(page);
 
@@ -38,15 +56,15 @@ test("テーマ切替はdark表示を適用しリロード後も保持する", a
   const documentRoot = page.locator("html");
   await expect(documentRoot).not.toHaveClass(/dark/);
 
-  await page.getByRole("button", { name: "Switch to dark theme" }).click();
+  await page.getByRole("button", { name: "ダークテーマへ切り替える" }).click();
 
   await expect(documentRoot).toHaveClass(/dark/);
-  await expect(page.getByRole("button", { name: "Switch to light theme" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "ライトテーマへ切り替える" })).toBeVisible();
 
   await page.reload();
 
   await expect(documentRoot).toHaveClass(/dark/);
-  await expect(page.getByRole("button", { name: "Switch to light theme" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "ライトテーマへ切り替える" })).toBeVisible();
   expect(runtime.apiRequests).toEqual([]);
   expect(runtime.consoleErrors).toEqual([]);
   expect(runtime.pageErrors).toEqual([]);
@@ -55,19 +73,18 @@ test("テーマ切替はdark表示を適用しリロード後も保持する", a
 test("取引履歴ラボで検索と仮想スクロールを操作できる", async ({ page }) => {
   const runtime = observeRuntime(page);
 
-  await page.goto("/");
-  await page.getByRole("heading", { name: "取引履歴ラボ" }).scrollIntoViewIfNeeded();
+  await page.goto("/history");
 
-  const searchInput = page.getByRole("searchbox", { name: "Search trades" });
+  const searchInput = page.getByRole("searchbox", { name: "取引履歴を検索" });
   await expect(searchInput).toBeVisible();
-  await expect(page.getByText(/Visible:\s*100,000/)).toBeVisible();
+  await expect(page.getByText(/表示件数:\s*100,000/)).toBeVisible();
 
   const tradeHistoryTable = page.getByRole("table").filter({ hasText: "Trade ID" });
   const firstRenderedRow = tradeHistoryTable.locator("tbody tr").first();
   await expect(firstRenderedRow).toContainText("TRD-000001");
 
   await searchInput.fill("ETH");
-  await expect(page.getByText(/Visible:\s*20,000/)).toBeVisible();
+  await expect(page.getByText(/表示件数:\s*20,000/)).toBeVisible();
   await expect(firstRenderedRow).toContainText("ETH/USDT");
 
   const rowTextBeforeScroll = await firstRenderedRow.textContent();
@@ -84,9 +101,9 @@ test("取引履歴ラボで検索と仮想スクロールを操作できる", as
 test("仮想ポートフォリオで初期数量のまま追加操作を実行できる", async ({ page }) => {
   const runtime = observeRuntime(page);
 
-  await page.goto("/");
+  await page.goto("/portfolio");
 
-  await expect(page.getByRole("heading", { name: "仮想ポートフォリオ" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "仮想ポートフォリオ" })).toBeVisible();
   await expect(page.getByLabel("数量")).toHaveValue("0.1");
   await page.getByRole("button", { name: "BTCを0.1追加する" }).click();
 
@@ -104,7 +121,7 @@ test("仮想ポートフォリオで初期数量のまま追加操作を実行�
 test("仮想ポートフォリオの数量入力でEnterを押して追加できる", async ({ page }) => {
   const runtime = observeRuntime(page);
 
-  await page.goto("/");
+  await page.goto("/portfolio");
 
   await page.getByLabel("数量").press("Enter");
 
@@ -125,54 +142,43 @@ test("localStorageを利用できなくても仮想ポートフォリオを操�
     });
   });
 
-  await page.goto("/");
+  await page.goto("/portfolio");
 
-  await expect(page.getByRole("heading", { name: "仮想ポートフォリオ" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "仮想ポートフォリオ" })).toBeVisible();
   await page.getByRole("button", { name: "BTCを0.1追加する" }).click();
   await expect(page.getByText("BTCの仮想保有を追加しました。")).toBeVisible();
   await expect(page.getByText("0.1000 単位")).toBeVisible();
 });
 
 test("仮想保有の操作グループと選択状態を識別できる", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/portfolio");
 
   await expect(page.getByRole("group", { name: "操作" })).toBeVisible();
   await expect(page.getByRole("button", { name: "追加", pressed: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "減らす", pressed: false })).toBeVisible();
 });
 
-test("Coinbase WSが失敗したらBinanceへ切り替えMarket Watchの4行を維持する", async ({ page }) => {
+test("Coinbase WSが失敗したらBinanceへ切り替えマーケット一覧の4銘柄を維持する", async ({
+  page,
+}) => {
   const runtime = observeRuntime(page);
   await mockTickerWebSocketFallback(page);
   await mockMarketCandlesResponse(page);
 
-  await page.goto("/");
-  await page.getByRole("button", { name: "WebSocket連携" }).click();
+  await page.goto("/market");
+  await page.getByRole("button", { name: "WebSocket" }).click();
 
   await expect(
-    page.getByText("Binanceマーケットデータをストリーミング中 / WebSocket連携 (Binance)"),
+    page
+      .getByRole("heading", { name: "マーケット一覧" })
+      .locator("..")
+      .getByText("Binanceマーケットデータをストリーミング中"),
   ).toBeVisible();
-  await expect(
-    page.locator('xpath=//p[normalize-space()="Visible Assets"]/following-sibling::p[1]'),
-  ).toHaveText("4");
-
-  const marketWatchTable = page
-    .locator('xpath=//h2[normalize-space()="Market Watch"]/ancestor::section[1]')
-    .locator("tbody tr");
-
-  await expect(marketWatchTable).toHaveCount(4);
-  await expect(marketWatchTable.locator("td:first-child div:first-child")).toHaveText([
-    "BTC",
-    "ETH",
-    "SOL",
-    "XRP",
-  ]);
-  await expect(marketWatchTable.locator("td:last-child")).toHaveText([
-    "binance ws",
-    "binance ws",
-    "binance ws",
-    "binance ws",
-  ]);
+  await expect(page.getByText(/現在のデータ:\s*WebSocket連携 \(Binance\)/)).toBeVisible();
+  const marketOptions = page.getByRole("option");
+  await expect(marketOptions).toHaveCount(4);
+  await expect(marketOptions).toContainText(["BTC", "ETH", "SOL", "XRP"]);
+  await expect(page.getByText("Binance WebSocket")).toBeVisible();
   expect(runtime.apiRequests).toHaveLength(1);
   expect(new URL(runtime.apiRequests[0]).pathname).toBe("/api/market/candles");
   expect(runtime.consoleErrors).toEqual([]);
@@ -192,15 +198,15 @@ for (const viewport of responsiveViewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.goto("/");
 
-    await expect(page.getByRole("heading", { name: "公開マーケットデータ監視UI" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "デモモード" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "REST連携" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "WebSocket連携" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Market Watch" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "マーケット概要" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "デモ" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "REST" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "WebSocket" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "マーケット一覧" })).toBeVisible();
     await expectNoBodyHorizontalOverflow(page);
 
-    await page.getByRole("heading", { name: "仮想ポートフォリオ" }).scrollIntoViewIfNeeded();
-    await expect(page.getByRole("heading", { name: "仮想ポートフォリオ" })).toBeVisible();
+    await page.getByRole("link", { name: "仮想ポートフォリオ" }).first().click();
+    await expect(page.getByRole("heading", { level: 1, name: "仮想ポートフォリオ" })).toBeVisible();
     await expect(page.getByLabel("数量")).toBeVisible();
     await expect(page.getByRole("button", { name: "追加", pressed: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "減らす", pressed: false })).toBeVisible();
@@ -211,6 +217,19 @@ for (const viewport of responsiveViewports) {
     expect(runtime.pageErrors).toEqual([]);
   });
 }
+
+test("マーケット一覧をクリックと矢印キーで選択しURLへ反映する", async ({ page }) => {
+  await page.goto("/market?asset=BTC&interval=1m");
+
+  const eth = page.getByRole("option", { name: /ETH/ });
+  await eth.click();
+  await expect(page).toHaveURL(/asset=ETH/);
+  await expect(page.getByRole("heading", { name: "ETH/USD ローソク足" })).toBeVisible();
+
+  await eth.press("ArrowDown");
+  await expect(page).toHaveURL(/asset=SOL/);
+  await expect(page.getByRole("option", { name: /SOL/ })).toBeFocused();
+});
 
 test("desktop表示後に390pxへ変更しても横幅が画面内に収まる", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
