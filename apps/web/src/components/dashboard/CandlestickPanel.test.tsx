@@ -34,6 +34,7 @@ describe("CandlestickPanel", () => {
 
     render(
       <CandlestickPanel
+        title="BTC/USD ローソク足"
         intervals={["1m"]}
         selectedInterval="1m"
         chartStatus="デモ用ローソク足"

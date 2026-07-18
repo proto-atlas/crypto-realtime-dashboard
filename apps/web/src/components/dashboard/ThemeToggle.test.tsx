@@ -8,8 +8,8 @@ describe("ThemeToggle", () => {
 
     render(<ThemeToggle theme="light" onToggleTheme={onToggleTheme} />);
 
-    const button = screen.getByRole("button", { name: "Switch to dark theme" });
-    expect(button).toHaveTextContent("Dark");
+    const button = screen.getByRole("button", { name: "ダークテーマへ切り替える" });
+    expect(button).toHaveTextContent("ダーク");
 
     fireEvent.click(button);
 
@@ -19,8 +19,8 @@ describe("ThemeToggle", () => {
   test("dark状態ならLightへ切り替えるボタンとして表示する", () => {
     render(<ThemeToggle theme="dark" onToggleTheme={() => undefined} />);
 
-    const button = screen.getByRole("button", { name: "Switch to light theme" });
+    const button = screen.getByRole("button", { name: "ライトテーマへ切り替える" });
 
-    expect(button).toHaveTextContent("Light");
+    expect(button).toHaveTextContent("ライト");
   });
 });

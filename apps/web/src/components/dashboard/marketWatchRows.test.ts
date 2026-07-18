@@ -10,6 +10,7 @@ const baseRows: readonly MarketRow[] = [
     change24hPercent: 1,
     volume24hUsd: 18_000_000_000,
     updatedAt: "demo",
+    sourceLabel: "デモ",
   },
   {
     symbol: "ETH",
@@ -18,6 +19,7 @@ const baseRows: readonly MarketRow[] = [
     change24hPercent: -1,
     volume24hUsd: 9_000_000_000,
     updatedAt: "demo",
+    sourceLabel: "デモ",
   },
   {
     symbol: "SOL",
@@ -26,6 +28,7 @@ const baseRows: readonly MarketRow[] = [
     change24hPercent: 2,
     volume24hUsd: 2_100_000_000,
     updatedAt: "demo",
+    sourceLabel: "デモ",
   },
   {
     symbol: "XRP",
@@ -34,6 +37,7 @@ const baseRows: readonly MarketRow[] = [
     change24hPercent: -2,
     volume24hUsd: 1_400_000_000,
     updatedAt: "demo",
+    sourceLabel: "デモ",
   },
 ];
 
@@ -49,6 +53,7 @@ describe("createStreamMarketRows", () => {
   test("一部のWS更新だけが届いても4資産の行数を維持する", () => {
     const rows = createStreamMarketRows(baseRows, {
       source: "binance",
+      receivedAt: "2026-07-18T00:00:00.000Z",
       updates: [
         {
           symbol: "BTCUSDT",
@@ -67,12 +72,9 @@ describe("createStreamMarketRows", () => {
       priceUsd: 70_000,
       change24hPercent: 2.941176470588235,
       volume24hUsd: 20_000_000_000,
-      updatedAt: "binance ws",
+      updatedAt: "2026-07-18T00:00:00.000Z",
+      sourceLabel: "Binance WebSocket",
     });
-    expect(rows.slice(1).map((row) => row.updatedAt)).toEqual([
-      "waiting ws",
-      "waiting ws",
-      "waiting ws",
-    ]);
+    expect(rows.slice(1).map((row) => row.updatedAt)).toEqual([null, null, null]);
   });
 });

@@ -2,8 +2,30 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme inline {
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --color-app: var(--app-bg);
+  --color-surface: var(--surface-bg);
+  --color-surface-muted: var(--surface-muted-bg);
+  --color-panel-border: var(--panel-border);
+  --color-focus: var(--focus-ring);
+  --color-chart-up: var(--chart-up);
+  --color-chart-down: var(--chart-down);
+  --radius-panel: 0.75rem;
+  --shadow-panel: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+  --spacing-page: 1.25rem;
+}
+
 :root {
   color-scheme: light;
+  --app-bg: #f8fafc;
+  --surface-bg: #ffffff;
+  --surface-muted-bg: #f1f5f9;
+  --panel-border: #e2e8f0;
+  --focus-ring: #0891b2;
+  --chart-up: #059669;
+  --chart-down: #e11d48;
+  --motion-price: 500ms;
   --table-sticky-header-bg: #f1f5f9;
   --table-sticky-cell-bg: #ffffff;
   --table-sticky-shadow: #e2e8f0;
@@ -15,6 +37,13 @@
 
 :root.dark {
   color-scheme: dark;
+  --app-bg: #020617;
+  --surface-bg: #0f172a;
+  --surface-muted-bg: #1e293b;
+  --panel-border: #1e293b;
+  --focus-ring: #67e8f9;
+  --chart-up: #6ee7b7;
+  --chart-down: #fda4af;
   --table-sticky-header-bg: #1e293b;
   --table-sticky-cell-bg: #0f172a;
   --table-sticky-shadow: #334155;
@@ -32,4 +61,31 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+@keyframes price-flash-up {
+  from {
+    background-color: color-mix(in srgb, var(--chart-up) 24%, transparent);
+  }
+}
+
+@keyframes price-flash-down {
+  from {
+    background-color: color-mix(in srgb, var(--chart-down) 24%, transparent);
+  }
+}
+
+.price-flash-up {
+  animation: price-flash-up var(--motion-price) ease-out;
+}
+
+.price-flash-down {
+  animation: price-flash-down var(--motion-price) ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .price-flash-up,
+  .price-flash-down {
+    animation: none;
+  }
 }

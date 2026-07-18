@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import { TradeHistoryTable } from "./TradeHistoryTable";
+import { getFilterOptionLabel, TradeHistoryTable } from "./TradeHistoryTable";
 
 vi.mock("@/lib/tradeHistory", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/tradeHistory")>();
@@ -21,8 +21,8 @@ describe("TradeHistoryTable", () => {
   test("ソート可能列はaria-sortで現在の状態を伝える", () => {
     render(<TradeHistoryTable />);
 
-    expect(getColumnHeaderByText("Time (UTC)")).toHaveAttribute("aria-sort", "descending");
-    expect(getColumnHeaderByText("Price")).toHaveAttribute("aria-sort", "none");
+    expect(getColumnHeaderByText("時刻 (UTC)")).toHaveAttribute("aria-sort", "descending");
+    expect(getColumnHeaderByText("価格")).toHaveAttribute("aria-sort", "none");
   });
 
   test("Trade ID固定ボタンを押したらaria-pressedが切り替わる", () => {
@@ -35,6 +35,19 @@ describe("TradeHistoryTable", () => {
     fireEvent.click(toggleButton);
 
     expect(toggleButton).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
+describe("getFilterOptionLabel", () => {
+  test("allは絞り込み項目を含む日本語で返す", () => {
+    expect(getFilterOptionLabel("ペア", "all")).toBe("すべてのペア");
+  });
+
+  test("売買と状態の内部値を日本語へ変換する", () => {
+    expect([getFilterOptionLabel("売買", "buy"), getFilterOptionLabel("状態", "filled")]).toEqual([
+      "買い",
+      "約定",
+    ]);
   });
 });
 

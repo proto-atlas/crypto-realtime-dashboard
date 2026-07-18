@@ -15,8 +15,8 @@ export function DisclaimerPanel() {
         >
           CoinGecko
         </a>
-        の公開データを利用します (Data provided by CoinGecko)。Live WebSocket
-        modeでは、利用可能な範囲でBinanceとCoinbaseの公開マーケットストリームを使います。
+        の公開データを利用します (Data provided by CoinGecko)。WebSocket連携では、利用可能な範囲で
+        BinanceとCoinbaseの公開マーケットストリームを使います。
       </p>
     </section>
   );

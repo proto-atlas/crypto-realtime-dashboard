@@ -2,229 +2,205 @@ import type {
   AssetSymbol,
   CandlestickPoint,
   ChartInterval,
-  CoinMarket,
-  DashboardMetric,
-  MarketDataMode,
   MarketDataResponse,
-  MarketPairSymbol,
 } from "@crypto-realtime-dashboard/shared-types";
-import { useMemo, useState } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { CandlestickPanel } from "@/components/dashboard/CandlestickPanel";
-import { ConnectionStatusPanel } from "@/components/dashboard/ConnectionStatusPanel";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { DeferredTradeHistoryTable } from "@/components/dashboard/DeferredTradeHistoryTable";
-import { DisclaimerPanel } from "@/components/dashboard/DisclaimerPanel";
+import { LivePrice } from "@/components/dashboard/LivePrice";
+import { MarketDetailsPanel } from "@/components/dashboard/MarketDetailsPanel";
 import { MarketWatchPanel } from "@/components/dashboard/MarketWatchPanel";
-import { MetricCard } from "@/components/dashboard/MetricCard";
-import { createStreamMarketRows } from "@/components/dashboard/marketWatchRows";
-import type { MarketRow } from "@/components/dashboard/types";
-import { VirtualPortfolioPanel } from "@/components/dashboard/VirtualPortfolioPanel";
-import { useCoinMarkets } from "@/hooks/useCoinMarkets";
+import { EmptyState } from "@/components/ui/async-state";
+import { useMarketData } from "@/contexts/MarketDataContext";
 import { useMarketCandles } from "@/hooks/useMarketCandles";
-import { type TickerStreamSource, useMarketTickerStream } from "@/hooks/useMarketTickerStream";
-import { useThemePreference } from "@/hooks/useThemePreference";
+import type { TickerStreamSource } from "@/hooks/useMarketTickerStream";
 import { applyLivePriceToLastCandle } from "@/lib/candlestick";
-import { createDemoCandlesticks, createDemoTickers } from "@/lib/demoMarketData";
+import { createDemoCandlesticks } from "@/lib/demoMarketData";
+import { toMarketPairSymbol } from "@/lib/marketDisplay";
 
 const chartIntervals: readonly ChartInterval[] = ["1m", "5m", "15m", "1h", "1d"];
-const selectedChartPair: MarketPairSymbol = "BTC-USD";
-const selectedChartAsset: AssetSymbol = "BTC";
 
 export function DashboardPage() {
-  const [dataMode, setDataMode] = useState<MarketDataMode>("demo");
-  const [streamEnabled, setStreamEnabled] = useState(false);
-  const [chartInterval, setChartInterval] = useState<ChartInterval>("1m");
-  const { theme, toggleTheme } = useThemePreference();
-  const marketsQuery = useCoinMarkets(dataMode === "live");
-  const candlesQuery = useMarketCandles(
-    selectedChartPair,
-    chartInterval,
-    dataMode === "live" || streamEnabled,
-  );
-  const tickerStream = useMarketTickerStream(streamEnabled);
-  const restRows = useMemo(
-    () =>
-      dataMode === "live" && marketsQuery.data !== undefined
-        ? marketsQuery.data.data.slice(0, 4).map(createLiveTicker)
-        : createDemoTickers(),
-    [dataMode, marketsQuery.data],
-  );
-  const streamBaseRows = useMemo(() => createDemoTickers(), []);
-  const streamRows = useMemo(
-    () => createStreamMarketRows(streamBaseRows, tickerStream.lastSummary),
-    [streamBaseRows, tickerStream.lastSummary],
-  );
-  const rows = streamEnabled ? streamRows : restRows;
+  const search = useSearch({ from: "/market" });
+  const navigate = useNavigate({ from: "/market" });
+  const {
+    mode,
+    rows,
+    marketStatus,
+    modeLabel,
+    activeStreamLabel,
+    isMarketError,
+    isStreamError,
+    tickerStream,
+  } = useMarketData();
+  const selectedPair = toMarketPairSymbol(search.asset);
+  const selectedMarket = rows.find((row) => row.symbol === search.asset) ?? rows[0] ?? null;
+  const candlesQuery = useMarketCandles(selectedPair, search.interval, mode !== "demo");
   const chartCandles = useMemo(() => {
     const baseCandles =
-      candlesQuery.data?.data ?? createDemoCandlesticks(selectedChartAsset, chartInterval);
-    const latestPrice = streamEnabled
-      ? findCoinbaseChartPrice(tickerStream.activeSource, tickerStream.lastSummary?.updates)
-      : null;
+      candlesQuery.data?.data ?? createDemoCandlesticks(search.asset, search.interval);
+    const latestPrice =
+      mode === "websocket"
+        ? findSelectedChartPrice(
+            tickerStream.activeSource,
+            selectedPair,
+            tickerStream.lastSummary?.updates,
+          )
+        : null;
 
     return applyLivePriceToLastCandle(baseCandles, latestPrice);
   }, [
     candlesQuery.data,
-    chartInterval,
-    streamEnabled,
+    mode,
+    search.asset,
+    search.interval,
+    selectedPair,
     tickerStream.activeSource,
     tickerStream.lastSummary,
   ]);
-  const activeStreamLabel =
-    tickerStream.activeSource === "coinbase"
-      ? "Coinbase"
-      : tickerStream.activeSource === "binance"
-        ? "Binance"
-        : "WS";
-  const modeLabel = streamEnabled
-    ? `WebSocket連携 (${activeStreamLabel})`
-    : dataMode === "live"
-      ? "REST連携"
-      : "デモ";
-  const marketStatus = streamEnabled
-    ? tickerStream.status === "open"
-      ? `${activeStreamLabel}マーケットデータをストリーミング中`
-      : tickerStream.status === "error"
-        ? "WebSocketを利用できません"
-        : "WebSocket中継へ接続中"
-    : dataMode === "live"
-      ? marketsQuery.isFetching
-        ? "公開マーケットデータを取得中"
-        : marketsQuery.isError
-          ? "公開APIを利用できません"
-          : "REST取得データ"
-      : "固定データ";
-  const chartStatus =
-    candlesQuery.isFetching && (dataMode === "live" || streamEnabled)
-      ? "Coinbaseローソク足を取得中"
-      : candlesQuery.isError || isDemoCandlesFallback(candlesQuery.data, dataMode, streamEnabled)
-        ? "Coinbaseローソク足を取得できません"
-        : dataMode === "live" || streamEnabled
-          ? "Coinbaseローソク足"
-          : "デモ用ローソク足";
-  const metrics = useMemo<DashboardMetric[]>(
-    () => [
-      {
-        label: "Data Mode",
-        value: modeLabel,
-        tone: streamEnabled || dataMode === "live" ? "positive" : "neutral",
-      },
-      {
-        label: "WS Relay",
-        value: streamEnabled ? `${activeStreamLabel} ${tickerStream.status}` : "Idle",
-        tone: tickerStream.status === "open" ? "positive" : "neutral",
-      },
-      {
-        label: "Visible Assets",
-        value: String(rows.length),
-        tone: "positive",
-      },
-      {
-        label: "Trading",
-        value: "Disabled",
-        tone: "neutral",
-      },
-    ],
-    [activeStreamLabel, dataMode, modeLabel, rows.length, streamEnabled, tickerStream.status],
-  );
+  const chartStatus = getChartStatus({
+    response: candlesQuery.data,
+    isFetching: candlesQuery.isFetching,
+    isError: candlesQuery.isError,
+    isLive: mode !== "demo",
+  });
+  const isCandlesError =
+    candlesQuery.isError || isDemoCandlesFallback(candlesQuery.data, mode !== "demo");
+
+  function selectAsset(asset: AssetSymbol) {
+    void navigate({ search: { ...search, asset }, replace: true });
+  }
+
+  function selectInterval(interval: ChartInterval) {
+    void navigate({ search: { ...search, interval }, replace: true });
+  }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
-      <DashboardHeader
-        dataMode={dataMode}
-        streamEnabled={streamEnabled}
-        theme={theme}
-        onSelectDemo={() => {
-          setStreamEnabled(false);
-          setDataMode("demo");
-        }}
-        onSelectLiveRest={() => {
-          setStreamEnabled(false);
-          setDataMode("live");
-        }}
-        onToggleLiveWs={() => setStreamEnabled((current) => !current)}
-        onToggleTheme={toggleTheme}
-      />
+    <div>
+      <header className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-medium text-cyan-700 dark:text-cyan-300">
+            リアルタイム市場監視
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold">マーケット概要</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            銘柄を選択して、価格、ローソク足、データ取得状態を確認します。
+          </p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-900">
+          <span className="text-slate-500 dark:text-slate-400">現在のデータ: </span>
+          <span className="font-semibold">{modeLabel}</span>
+        </div>
+      </header>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8">
-        <section className="min-w-0 space-y-6">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {metrics.map((metric) => (
-              <MetricCard key={metric.label} metric={metric} />
-            ))}
+      {selectedMarket === null ? (
+        <EmptyState
+          title="表示できる銘柄がありません"
+          description="デモモードへ切り替えるか、マーケットデータの取得状態を確認してください。"
+        />
+      ) : (
+        <div className="grid min-w-0 gap-5 xl:grid-cols-[280px_minmax(0,1fr)_300px] xl:items-start">
+          <div className="order-2 min-w-0 xl:order-1">
+            <MarketWatchPanel
+              rows={rows}
+              selectedSymbol={selectedMarket.symbol}
+              marketStatus={marketStatus}
+              isMarketError={isMarketError}
+              isStreamError={isStreamError}
+              onSelect={selectAsset}
+            />
           </div>
 
-          <MarketWatchPanel
-            rows={rows}
-            marketStatus={marketStatus}
-            modeLabel={modeLabel}
-            isMarketError={marketsQuery.isError}
-            isStreamEnabled={streamEnabled}
-            isStreamError={tickerStream.status === "error"}
-          />
-
-          <section className="grid gap-6 xl:grid-cols-2">
+          <section className="order-1 min-w-0 xl:order-2">
+            <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {selectedMarket.displayName} / {selectedPair}
+                  </p>
+                  <LivePrice
+                    priceUsd={selectedMarket.priceUsd}
+                    label={`${selectedMarket.symbol}の現在価格`}
+                  />
+                </div>
+                <p
+                  className={`mt-1 font-semibold tabular-nums ${
+                    selectedMarket.change24hPercent >= 0
+                      ? "text-emerald-700 dark:text-emerald-300"
+                      : "text-rose-700 dark:text-rose-300"
+                  }`}
+                >
+                  {selectedMarket.change24hPercent >= 0 ? "▲" : "▼"}{" "}
+                  {Math.abs(selectedMarket.change24hPercent).toFixed(2)}%
+                </p>
+              </div>
+            </div>
             <CandlestickPanel
+              title={`${selectedPair.replace("-", "/")} ローソク足`}
               intervals={chartIntervals}
-              selectedInterval={chartInterval}
+              selectedInterval={search.interval}
               chartStatus={chartStatus}
               candles={chartCandles}
-              isStreamEnabled={streamEnabled}
-              isCandlesError={
-                candlesQuery.isError ||
-                isDemoCandlesFallback(candlesQuery.data, dataMode, streamEnabled)
-              }
-              onSelectInterval={setChartInterval}
-            />
-            <ConnectionStatusPanel
-              dataMode={dataMode}
-              streamEnabled={streamEnabled}
-              activeStreamLabel={activeStreamLabel}
-              marketStatus={marketStatus}
-              tickerStream={tickerStream}
+              isStreamEnabled={mode === "websocket"}
+              isCandlesError={isCandlesError}
+              onSelectInterval={selectInterval}
             />
           </section>
 
-          <DeferredTradeHistoryTable />
-        </section>
-
-        <aside className="min-w-0 space-y-6">
-          <VirtualPortfolioPanel rows={rows} />
-          <DisclaimerPanel />
-        </aside>
-      </div>
-    </main>
+          <aside className="order-3 min-w-0 xl:sticky xl:top-5">
+            <MarketDetailsPanel
+              market={selectedMarket}
+              activeStreamLabel={activeStreamLabel}
+              marketStatus={marketStatus}
+              streamStatus={tickerStream.status}
+              fallbackReason={tickerStream.fallbackReason}
+            />
+          </aside>
+        </div>
+      )}
+    </div>
   );
 }
 
 function isDemoCandlesFallback(
   response: MarketDataResponse<CandlestickPoint[]> | undefined,
-  dataMode: MarketDataMode,
-  streamEnabled: boolean,
+  isLive: boolean,
 ) {
-  return (dataMode === "live" || streamEnabled) && response?.source === "demo";
+  return isLive && response?.source === "demo";
 }
 
-function createLiveTicker(market: CoinMarket): MarketRow {
-  return {
-    symbol: market.symbol.toUpperCase(),
-    displayName: market.name,
-    priceUsd: market.currentPriceUsd,
-    change24hPercent: market.priceChangePercentage24h ?? 0,
-    volume24hUsd: market.totalVolumeUsd ?? 0,
-    updatedAt: market.lastUpdated ?? "coingecko",
-  };
+function getChartStatus({
+  response,
+  isFetching,
+  isError,
+  isLive,
+}: {
+  response: MarketDataResponse<CandlestickPoint[]> | undefined;
+  isFetching: boolean;
+  isError: boolean;
+  isLive: boolean;
+}) {
+  if (!isLive) {
+    return "デモ用ローソク足";
+  }
+
+  if (isFetching) {
+    return "Coinbaseローソク足を取得中";
+  }
+
+  return isError || response?.source === "demo"
+    ? "Coinbaseローソク足を取得できません"
+    : "Coinbaseローソク足";
 }
 
-export function findCoinbaseChartPrice(
+export function findSelectedChartPrice(
   activeSource: TickerStreamSource | null,
+  selectedPair: string,
   updates: ReadonlyArray<{ symbol: string; closePriceUsd: number }> | undefined,
 ) {
   if (activeSource !== "coinbase") {
     return null;
   }
 
-  const update = updates?.find((item) => item.symbol === selectedChartPair);
-
-  return update?.closePriceUsd ?? null;
+  return updates?.find((item) => item.symbol === selectedPair)?.closePriceUsd ?? null;
 }

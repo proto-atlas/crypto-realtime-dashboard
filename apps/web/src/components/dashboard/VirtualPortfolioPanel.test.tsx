@@ -12,6 +12,7 @@ const rows: readonly MarketRow[] = [
     change24hPercent: 1.24,
     volume24hUsd: 18_240_000_000,
     updatedAt: "demo",
+    sourceLabel: "デモ",
   },
   {
     symbol: "ETH",
@@ -20,6 +21,7 @@ const rows: readonly MarketRow[] = [
     change24hPercent: -0.86,
     volume24hUsd: 9_350_000_000,
     updatedAt: "demo",
+    sourceLabel: "デモ",
   },
 ];
 

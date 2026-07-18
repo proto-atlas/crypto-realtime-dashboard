@@ -11,6 +11,7 @@ const CandlestickChart = lazy(() =>
 );
 
 export function CandlestickPanel({
+  title,
   intervals,
   selectedInterval,
   chartStatus,
@@ -19,6 +20,7 @@ export function CandlestickPanel({
   isCandlesError,
   onSelectInterval,
 }: {
+  title: string;
   intervals: readonly ChartInterval[];
   selectedInterval: ChartInterval;
   chartStatus: string;
@@ -28,7 +30,7 @@ export function CandlestickPanel({
   onSelectInterval: (interval: ChartInterval) => void;
 }) {
   return (
-    <Panel title="BTC/USD ローソク足" icon={<LineChart className="size-5" aria-hidden="true" />}>
+    <Panel title={title} icon={<LineChart className="size-5" aria-hidden="true" />}>
       <div className="mb-4 flex flex-col gap-3">
         <div className="flex flex-wrap gap-2">
           {intervals.map((interval) => (

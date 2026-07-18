@@ -1,126 +1,112 @@
-import type {
-  CandlestickPoint,
-  CoinMarket,
-  MarketDataResponse,
-} from "@crypto-realtime-dashboard/shared-types";
+import type { CandlestickPoint, MarketDataResponse } from "@crypto-realtime-dashboard/shared-types";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import type { TickerStreamState } from "@/hooks/useMarketTickerStream";
-import { DashboardPage, findCoinbaseChartPrice } from "./dashboard";
+import { DashboardPage, findSelectedChartPrice } from "./dashboard";
 
-type QueryState<TData> = {
-  data: TData | undefined;
-  isFetching: boolean;
-  isError: boolean;
-};
-
-type HookState = {
-  coinMarkets: QueryState<MarketDataResponse<CoinMarket[]>>;
-  klines: QueryState<MarketDataResponse<CandlestickPoint[]>>;
-  tickerStream: TickerStreamState;
-};
-
-const hookState = vi.hoisted(
-  (): HookState => ({
-    coinMarkets: {
-      data: undefined,
-      isFetching: false,
-      isError: false,
-    },
-    klines: {
-      data: undefined,
-      isFetching: false,
-      isError: false,
-    },
-    tickerStream: {
-      status: "idle",
-      activeSource: null,
-      fallbackReason: null,
-      lastSummary: null,
-    },
-  }),
+const navigateMock = vi.hoisted(() => vi.fn());
+const searchState = vi.hoisted(() => ({ asset: "BTC" as const, interval: "1m" as const }));
+const candlesState = vi.hoisted(
+  (): {
+    data: MarketDataResponse<CandlestickPoint[]> | undefined;
+    isFetching: boolean;
+    isError: boolean;
+  } => ({ data: undefined, isFetching: false, isError: false }),
 );
+const marketDataState = vi.hoisted(() => ({
+  mode: "demo" as "demo" | "rest" | "websocket",
+  rows: [
+    {
+      symbol: "BTC" as const,
+      displayName: "Bitcoin",
+      priceUsd: 70_000,
+      change24hPercent: 2.5,
+      volume24hUsd: 25_000_000_000,
+      updatedAt: "demo",
+      sourceLabel: "デモ",
+    },
+    {
+      symbol: "ETH" as const,
+      displayName: "Ethereum",
+      priceUsd: 3_500,
+      change24hPercent: -1.25,
+      volume24hUsd: 12_000_000_000,
+      updatedAt: "demo",
+      sourceLabel: "デモ",
+    },
+  ],
+  marketStatus: "固定データ",
+  modeLabel: "デモ",
+  activeStreamLabel: "WebSocket",
+  isMarketError: false,
+  isStreamError: false,
+  tickerStream: {
+    status: "idle" as const,
+    activeSource: null,
+    fallbackReason: null,
+    lastSummary: null,
+  },
+}));
 
-vi.mock("@/hooks/useCoinMarkets", () => ({
-  useCoinMarkets: () => hookState.coinMarkets,
+vi.mock("@tanstack/react-router", () => ({
+  useNavigate: () => navigateMock,
+  useSearch: () => searchState,
+}));
+
+vi.mock("@/contexts/MarketDataContext", () => ({
+  useMarketData: () => marketDataState,
 }));
 
 vi.mock("@/hooks/useMarketCandles", () => ({
-  useMarketCandles: () => hookState.klines,
+  useMarketCandles: () => candlesState,
 }));
 
-// 接続の状態遷移はhook単体で確認し、このテストでは表示状態だけを固定する。
-vi.mock("@/hooks/useMarketTickerStream", () => ({
-  useMarketTickerStream: () => hookState.tickerStream,
+vi.mock("@/components/CandlestickChart", () => ({
+  CandlestickChart: () => <div>チャート描画済み</div>,
 }));
-
-class StableIntersectionObserver {
-  observe() {
-    return;
-  }
-
-  unobserve() {
-    return;
-  }
-
-  disconnect() {
-    return;
-  }
-
-  takeRecords(): IntersectionObserverEntry[] {
-    return [];
-  }
-}
 
 describe("DashboardPage", () => {
   beforeEach(() => {
-    hookState.coinMarkets = createCoinMarketsState();
-    hookState.klines = createKlinesState();
-    hookState.tickerStream = createTickerStreamState();
-    vi.stubGlobal("IntersectionObserver", StableIntersectionObserver);
+    navigateMock.mockReset();
+    searchState.asset = "BTC";
+    searchState.interval = "1m";
+    candlesState.data = undefined;
+    candlesState.isFetching = false;
+    candlesState.isError = false;
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  test("REST連携ボタンを押したらMarket Watchの状態表示がREST連携になる", () => {
+  test("選択中のBTC価格とローソク足見出しを表示する", async () => {
     render(<DashboardPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "REST連携" }));
-
-    expect(screen.getByText("REST取得データ / REST連携")).toBeInTheDocument();
+    expect(screen.getByLabelText("BTCの現在価格")).toHaveTextContent("$70,000");
+    expect(screen.getByRole("heading", { name: "BTC/USD ローソク足" })).toBeInTheDocument();
+    expect(await screen.findByText("チャート描画済み")).toBeInTheDocument();
   });
 
-  test("REST連携で市場データを受け取ったら通貨名と価格を表示する", () => {
+  test("ETHを選んだらURL検索値の更新を要求する", () => {
     render(<DashboardPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "REST連携" }));
+    fireEvent.click(screen.getByRole("option", { name: /ETH/ }));
 
-    expect(screen.getByText("Bitcoin Test")).toBeInTheDocument();
-    expect(screen.getByText("$91,235")).toBeInTheDocument();
+    expect(navigateMock).toHaveBeenCalledWith({
+      search: { asset: "ETH", interval: "1m" },
+      replace: true,
+    });
   });
 
-  test("REST連携でローソク足がデモfallbackなら警告を表示する", () => {
-    hookState.klines = createKlinesState({
+  test("ローソク足APIがデモfallbackなら警告を表示する", () => {
+    candlesState.data = {
       source: "demo",
       cache: "bypass",
-      updatedAt: "2026-05-07T00:00:00.000Z",
-      data: [
-        {
-          timestamp: 1_778_112_000_000,
-          open: 43000,
-          high: 43100,
-          low: 42900,
-          close: 43050,
-          volume: 120,
-          quoteVolume: 5_166_000,
-        },
-      ],
-    });
-    render(<DashboardPage />);
+      updatedAt: "2026-07-18T00:00:00.000Z",
+      data: [],
+    };
+    marketDataState.mode = "rest";
 
-    fireEvent.click(screen.getByRole("button", { name: "REST連携" }));
+    render(<DashboardPage />);
 
     expect(screen.getByText("Coinbaseローソク足を取得できません")).toBeInTheDocument();
     expect(
@@ -128,95 +114,22 @@ describe("DashboardPage", () => {
         "Coinbaseローソク足の取得に失敗しました。デモデータで表示を継続しています。",
       ),
     ).toBeInTheDocument();
-  });
 
-  test("WebSocket連携ボタンを押したらWebSocketの接続状態を表示する", () => {
-    hookState.tickerStream = createTickerStreamState({
-      status: "open",
-      activeSource: "binance",
-      lastSummary: {
-        source: "binance",
-        payloadSize: 2,
-        receivedAt: "2026-05-07T00:00:00.000Z",
-        updates: [
-          {
-            symbol: "BTCUSDT",
-            closePriceUsd: 93_400,
-            openPriceUsd: 92_000,
-            highPriceUsd: 94_100,
-            lowPriceUsd: 91_800,
-            baseVolume: 140,
-            quoteVolumeUsd: 12_500_000,
-            eventTime: 1_778_112_000_000,
-          },
-        ],
-      },
-    });
-    render(<DashboardPage />);
-
-    fireEvent.click(screen.getByRole("button", { name: "WebSocket連携" }));
-
-    expect(
-      screen.getByText("Binanceマーケットデータをストリーミング中 / WebSocket連携 (Binance)"),
-    ).toBeInTheDocument();
+    marketDataState.mode = "demo";
   });
 });
 
-describe("findCoinbaseChartPrice", () => {
-  const updates = [{ symbol: "BTC-USD", closePriceUsd: 70_000 }];
+describe("findSelectedChartPrice", () => {
+  const updates = [
+    { symbol: "BTC-USD", closePriceUsd: 70_000 },
+    { symbol: "ETH-USD", closePriceUsd: 3_500 },
+  ];
 
-  test("Coinbase接続中ならBTC-USD価格を返す", () => {
-    expect(findCoinbaseChartPrice("coinbase", updates)).toBe(70_000);
+  test("Coinbase接続中なら選択ペアの価格を返す", () => {
+    expect(findSelectedChartPrice("coinbase", "ETH-USD", updates)).toBe(3_500);
   });
 
   test("Binance予備経路ではCoinbaseローソク足へ価格を混ぜない", () => {
-    expect(findCoinbaseChartPrice("binance", updates)).toBeNull();
+    expect(findSelectedChartPrice("binance", "BTC-USD", updates)).toBeNull();
   });
 });
-
-function createCoinMarketsState(): QueryState<MarketDataResponse<CoinMarket[]>> {
-  return {
-    data: {
-      source: "coingecko",
-      cache: "hit",
-      updatedAt: "2026-05-07T00:00:00.000Z",
-      data: [
-        {
-          id: "bitcoin",
-          symbol: "btc",
-          // 初期表示のデモモードとREST連携表示を区別するためのfixture名。
-          name: "Bitcoin Test",
-          image: null,
-          currentPriceUsd: 91_234.56,
-          marketCapUsd: 1_800_000_000_000,
-          marketCapRank: 1,
-          totalVolumeUsd: 42_000_000_000,
-          priceChangePercentage24h: 1.23,
-          lastUpdated: "coingecko fixture",
-        },
-      ],
-    },
-    isFetching: false,
-    isError: false,
-  };
-}
-
-function createKlinesState(
-  data: MarketDataResponse<CandlestickPoint[]> | undefined = undefined,
-): QueryState<MarketDataResponse<CandlestickPoint[]>> {
-  return {
-    data,
-    isFetching: false,
-    isError: false,
-  };
-}
-
-function createTickerStreamState(overrides: Partial<TickerStreamState> = {}): TickerStreamState {
-  return {
-    status: "idle",
-    activeSource: null,
-    fallbackReason: null,
-    lastSummary: null,
-    ...overrides,
-  };
-}

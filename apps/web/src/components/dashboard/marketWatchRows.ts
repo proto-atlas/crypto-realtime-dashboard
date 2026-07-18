@@ -1,7 +1,9 @@
+import type { AssetSymbol } from "@crypto-realtime-dashboard/shared-types";
 import type { MarketRow } from "./types";
 
 type StreamMarketSummary = {
   source: "binance" | "coinbase";
+  receivedAt: string;
   updates: readonly StreamMarketUpdate[];
 };
 
@@ -12,7 +14,7 @@ type StreamMarketUpdate = {
   quoteVolumeUsd: number;
 };
 
-const streamAssetNames = new Map([
+const streamAssetNames = new Map<string, { displayName: string; symbol: AssetSymbol }>([
   ["BTCUSDT", { displayName: "Bitcoin", symbol: "BTC" }],
   ["ETHUSDT", { displayName: "Ethereum", symbol: "ETH" }],
   ["SOLUSDT", { displayName: "Solana", symbol: "SOL" }],
@@ -31,7 +33,7 @@ export function createStreamMarketRows(
     return baseRows.map((row) => ({ ...row }));
   }
 
-  const sourceLabel = summary.source === "coinbase" ? "coinbase ws" : "binance ws";
+  const sourceLabel = summary.source === "coinbase" ? "Coinbase WebSocket" : "Binance WebSocket";
   const updatesByAssetSymbol = createUpdatesByAssetSymbol(summary.updates);
 
   return baseRows.map((row) => {
@@ -40,7 +42,8 @@ export function createStreamMarketRows(
     if (update === undefined) {
       return {
         ...row,
-        updatedAt: "waiting ws",
+        updatedAt: null,
+        sourceLabel: "受信待ち",
       };
     }
 
@@ -56,7 +59,8 @@ export function createStreamMarketRows(
       priceUsd: update.closePriceUsd,
       change24hPercent,
       volume24hUsd: update.quoteVolumeUsd,
-      updatedAt: sourceLabel,
+      updatedAt: summary.receivedAt,
+      sourceLabel,
     };
   });
 }

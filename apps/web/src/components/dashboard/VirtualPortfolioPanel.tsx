@@ -1,3 +1,4 @@
+import { isSupportedAssetSymbol } from "@crypto-realtime-dashboard/shared-types";
 import { Activity, RotateCcw, WalletCards } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -84,6 +85,12 @@ export function VirtualPortfolioPanel({ rows }: { rows: readonly MarketRow[] }) 
     setQuantityInput(defaultQuantityInput);
   }
 
+  function handleSymbolChange(value: string) {
+    if (isSupportedAssetSymbol(value)) {
+      setSelectedSymbol(value);
+    }
+  }
+
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -135,7 +142,7 @@ export function VirtualPortfolioPanel({ rows }: { rows: readonly MarketRow[] }) 
             <select
               className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               value={selectedMarket?.symbol ?? selectedSymbol}
-              onChange={(event) => setSelectedSymbol(event.target.value)}
+              onChange={(event) => handleSymbolChange(event.target.value)}
             >
               {rows.map((row) => (
                 <option key={row.symbol} value={row.symbol}>
@@ -195,6 +202,8 @@ export function VirtualPortfolioPanel({ rows }: { rows: readonly MarketRow[] }) 
 
       {message !== null ? (
         <p
+          role="status"
+          aria-live="polite"
           className={`mt-3 rounded-lg border px-3 py-2 text-sm ${
             message.tone === "success"
               ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"

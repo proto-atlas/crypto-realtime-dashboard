@@ -16,7 +16,7 @@ export function ThemeToggle({
       type="button"
       variant="secondary"
       size="sm"
-      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      aria-label={isDark ? "ライトテーマへ切り替える" : "ダークテーマへ切り替える"}
       onClick={onToggleTheme}
     >
       {isDark ? (
@@ -24,7 +24,7 @@ export function ThemeToggle({
       ) : (
         <Moon className="size-4" aria-hidden="true" />
       )}
-      {isDark ? "Light" : "Dark"}
+      {isDark ? "ライト" : "ダーク"}
     </Button>
   );
 }

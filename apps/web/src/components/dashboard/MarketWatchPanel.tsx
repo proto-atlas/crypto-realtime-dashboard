@@ -1,86 +1,130 @@
-import { ShieldCheck } from "lucide-react";
-import { formatCompactUsd, formatPercent, formatUsd } from "@/lib/format";
+import type { AssetSymbol } from "@crypto-realtime-dashboard/shared-types";
+import { type KeyboardEvent, useRef } from "react";
+import { ErrorState } from "@/components/ui/async-state";
+import { formatPercent, formatUsd } from "@/lib/format";
+import { formatDataFreshness, getNextMarketIndex } from "@/lib/marketDisplay";
+import { cn } from "@/lib/utils";
 import type { MarketRow } from "./types";
 
 export function MarketWatchPanel({
   rows,
+  selectedSymbol,
   marketStatus,
-  modeLabel,
   isMarketError,
-  isStreamEnabled,
   isStreamError,
+  onSelect,
 }: {
   rows: readonly MarketRow[];
+  selectedSymbol: AssetSymbol;
   marketStatus: string;
-  modeLabel: string;
   isMarketError: boolean;
-  isStreamEnabled: boolean;
   isStreamError: boolean;
+  onSelect: (symbol: AssetSymbol) => void;
 }) {
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const direction =
+      event.key === "ArrowRight" || event.key === "ArrowDown"
+        ? "next"
+        : event.key === "ArrowLeft" || event.key === "ArrowUp"
+          ? "previous"
+          : null;
+
+    if (direction === null) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextIndex = getNextMarketIndex(index, direction, rows.length);
+    const nextRow = rows[nextIndex];
+    if (nextRow !== undefined) {
+      onSelect(nextRow.symbol);
+      optionRefs.current[nextIndex]?.focus();
+    }
+  }
+
   return (
-    <section className="min-w-0 rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-      <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">Market Watch</h2>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            {marketStatus} / {modeLabel}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
-          <ShieldCheck className="size-4" aria-hidden="true" />
-          実取引なし
-        </div>
+    <section className="min-w-0 rounded-panel border border-panel-border bg-surface p-4 shadow-panel">
+      <div className="mb-3">
+        <h2 className="font-semibold">マーケット一覧</h2>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{marketStatus}</p>
       </div>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[680px] border-collapse text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-100 text-slate-500 dark:border-slate-800 dark:text-slate-400">
-              <th className="py-3 pr-4 font-medium">Asset</th>
-              <th className="px-4 py-3 font-medium">Price</th>
-              <th className="px-4 py-3 font-medium">24h</th>
-              <th className="px-4 py-3 font-medium">Volume</th>
-              <th className="py-3 pl-4 font-medium">Source</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((ticker) => (
-              <MarketWatchRow key={ticker.symbol} ticker={ticker} />
-            ))}
-          </tbody>
-        </table>
+      <div
+        className="flex snap-x gap-3 overflow-x-auto pb-2 xl:grid xl:overflow-visible xl:pb-0"
+        role="listbox"
+        aria-label="監視する銘柄"
+      >
+        {rows.map((ticker, index) => {
+          const selected = ticker.symbol === selectedSymbol;
+          const positive = ticker.change24hPercent >= 0;
+
+          return (
+            <button
+              key={ticker.symbol}
+              ref={(element) => {
+                optionRefs.current[index] = element;
+              }}
+              type="button"
+              role="option"
+              aria-selected={selected}
+              tabIndex={selected ? 0 : -1}
+              className={cn(
+                "min-w-[220px] snap-start rounded-xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 xl:min-w-0",
+                selected
+                  ? "border-cyan-500 bg-cyan-50 dark:border-cyan-400 dark:bg-cyan-950/50"
+                  : "border-slate-200 bg-white hover:border-cyan-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-cyan-700",
+              )}
+              onClick={() => onSelect(ticker.symbol)}
+              onKeyDown={(event) => handleKeyDown(event, index)}
+            >
+              <span className="flex items-center justify-between gap-3">
+                <span className="flex items-center gap-2">
+                  <span className="flex size-9 items-center justify-center rounded-full bg-slate-950 text-xs font-bold text-white dark:bg-cyan-300 dark:text-slate-950">
+                    {ticker.symbol.slice(0, 2)}
+                  </span>
+                  <span>
+                    <span className="block font-semibold">{ticker.symbol}</span>
+                    <span className="block text-xs text-slate-500 dark:text-slate-400">
+                      {ticker.displayName}
+                    </span>
+                  </span>
+                </span>
+                {selected ? (
+                  <span className="text-xs font-semibold text-cyan-800 dark:text-cyan-200">
+                    選択中
+                  </span>
+                ) : null}
+              </span>
+              <span className="mt-3 flex items-end justify-between gap-3">
+                <span className="font-semibold tabular-nums">{formatUsd(ticker.priceUsd)}</span>
+                <span
+                  className={cn(
+                    "text-sm font-semibold tabular-nums",
+                    positive
+                      ? "text-emerald-700 dark:text-emerald-300"
+                      : "text-rose-700 dark:text-rose-300",
+                  )}
+                >
+                  {positive ? "▲" : "▼"} {formatPercent(Math.abs(ticker.change24hPercent))}
+                </span>
+              </span>
+              <span className="mt-2 block text-xs text-slate-500 dark:text-slate-400">
+                {formatDataFreshness(ticker.updatedAt)}
+              </span>
+            </button>
+          );
+        })}
       </div>
-      {isMarketError ? (
-        <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
-          REST連携の取得に失敗しました。デモモードに戻すとローカルデータで確認できます。
-        </p>
-      ) : null}
-      {isStreamEnabled && isStreamError ? (
-        <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
-          WebSocket連携の接続に失敗しました。BFFを起動するか、デモモードへ戻してください。
-        </p>
+
+      {isMarketError || isStreamError ? (
+        <div className="mt-3">
+          <ErrorState>
+            マーケットデータを取得できません。デモモードへ切り替えると固定データを表示できます。
+          </ErrorState>
+        </div>
       ) : null}
     </section>
-  );
-}
-
-function MarketWatchRow({ ticker }: { ticker: MarketRow }) {
-  const isPositive = ticker.change24hPercent >= 0;
-
-  return (
-    <tr className="border-b border-slate-100 last:border-0 dark:border-slate-800">
-      <td className="py-4 pr-4">
-        <div className="font-semibold text-slate-950 dark:text-slate-50">{ticker.symbol}</div>
-        <div className="text-sm text-slate-500 dark:text-slate-400">{ticker.displayName}</div>
-      </td>
-      <td className="px-4 py-4 font-medium">{formatUsd(ticker.priceUsd)}</td>
-      <td
-        className={`px-4 py-4 font-medium ${isPositive ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"}`}
-      >
-        {formatPercent(ticker.change24hPercent)}
-      </td>
-      <td className="px-4 py-4">{formatCompactUsd(ticker.volume24hUsd)}</td>
-      <td className="py-4 pl-4 text-slate-500 dark:text-slate-400">{ticker.updatedAt}</td>
-    </tr>
   );
 }

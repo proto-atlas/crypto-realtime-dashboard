@@ -30,14 +30,14 @@ const sideOptions = ["all", "buy", "sell"] as const;
 const statusOptions = ["all", "filled", "canceled", "rejected"] as const;
 
 const sideLabels: Record<TradeSide, string> = {
-  buy: "Buy",
-  sell: "Sell",
+  buy: "買い",
+  sell: "売り",
 };
 
 const statusLabels: Record<TradeStatus, string> = {
-  filled: "Filled",
-  canceled: "Canceled",
-  rejected: "Rejected",
+  filled: "約定",
+  canceled: "取消",
+  rejected: "拒否",
 };
 
 const tradeTimeFormatter = new Intl.DateTimeFormat("ja-JP", {
@@ -91,7 +91,7 @@ export function TradeHistoryTable() {
       },
       {
         accessorKey: "executedAtMs",
-        header: "Time (UTC)",
+        header: "時刻 (UTC)",
         size: 150,
         minSize: 130,
         cell: (info) => (
@@ -102,7 +102,7 @@ export function TradeHistoryTable() {
       },
       {
         accessorKey: "symbol",
-        header: "Pair",
+        header: "ペア",
         size: 130,
         minSize: 120,
         filterFn: "equalsString",
@@ -114,7 +114,7 @@ export function TradeHistoryTable() {
       },
       {
         accessorKey: "side",
-        header: "Side",
+        header: "売買",
         size: 100,
         minSize: 92,
         filterFn: "equalsString",
@@ -137,35 +137,35 @@ export function TradeHistoryTable() {
       },
       {
         accessorKey: "priceUsd",
-        header: "Price",
+        header: "価格",
         size: 120,
         minSize: 110,
         cell: (info) => <span className="font-medium">{formatUsd(info.getValue<number>())}</span>,
       },
       {
         accessorKey: "quantity",
-        header: "Qty",
+        header: "数量",
         size: 120,
         minSize: 100,
         cell: (info) => quantityFormatter.format(info.getValue<number>()),
       },
       {
         accessorKey: "notionalUsd",
-        header: "Notional",
+        header: "想定元本",
         size: 130,
         minSize: 120,
         cell: (info) => <span className="font-medium">{formatUsd(info.getValue<number>())}</span>,
       },
       {
         accessorKey: "feeUsd",
-        header: "Fee",
+        header: "手数料",
         size: 100,
         minSize: 90,
         cell: (info) => formatUsd(info.getValue<number>()),
       },
       {
         accessorKey: "venue",
-        header: "Venue",
+        header: "取引所",
         size: 150,
         minSize: 130,
         cell: (info) => (
@@ -174,7 +174,7 @@ export function TradeHistoryTable() {
       },
       {
         accessorKey: "status",
-        header: "Status",
+        header: "状態",
         size: 120,
         minSize: 110,
         filterFn: "equalsString",
@@ -251,10 +251,10 @@ export function TradeHistoryTable() {
         <div>
           <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">取引履歴ラボ</h2>
           <div className="mt-2 flex flex-wrap gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
-            <MetricPill label="Rows" value={integerFormatter.format(summary.totalRows)} />
-            <MetricPill label="Visible" value={integerFormatter.format(filteredRows.length)} />
-            <MetricPill label="Notional" value={formatCompactUsd(summary.totalNotionalUsd)} />
-            <MetricPill label="Generated" value={`${generation.durationMs.toFixed(1)} ms`} />
+            <MetricPill label="総件数" value={integerFormatter.format(summary.totalRows)} />
+            <MetricPill label="表示件数" value={integerFormatter.format(filteredRows.length)} />
+            <MetricPill label="想定元本" value={formatCompactUsd(summary.totalNotionalUsd)} />
+            <MetricPill label="生成時間" value={`${generation.durationMs.toFixed(1)} ms`} />
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -274,37 +274,37 @@ export function TradeHistoryTable() {
           </Button>
           <Button size="sm" variant="secondary" onClick={resetTableState}>
             <RotateCcw className="size-4" aria-hidden="true" />
-            Reset
+            初期化
           </Button>
         </div>
       </div>
 
       <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_160px_170px]">
         <label className="relative block">
-          <span className="sr-only">Search trades</span>
+          <span className="sr-only">取引履歴を検索</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           <input
             value={globalFilter}
             onChange={(event) => setGlobalFilter(event.target.value)}
             className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-cyan-950"
-            placeholder="Trade ID / pair / venue"
+            placeholder="Trade ID / ペア / 取引所"
             type="search"
           />
         </label>
         <FilterSelect
-          label="Pair"
+          label="ペア"
           value={String(table.getColumn("symbol")?.getFilterValue() ?? "all")}
           options={symbolOptions}
           onChange={(value) => updateColumnFilter("symbol", value)}
         />
         <FilterSelect
-          label="Side"
+          label="売買"
           value={String(table.getColumn("side")?.getFilterValue() ?? "all")}
           options={sideOptions}
           onChange={(value) => updateColumnFilter("side", value)}
         />
         <FilterSelect
-          label="Status"
+          label="状態"
           value={String(table.getColumn("status")?.getFilterValue() ?? "all")}
           options={statusOptions}
           onChange={(value) => updateColumnFilter("status", value)}
@@ -465,12 +465,28 @@ function FilterSelect({
       >
         {options.map((option) => (
           <option key={option} value={option}>
-            {option === "all" ? `All ${label}` : option}
+            {getFilterOptionLabel(label, option)}
           </option>
         ))}
       </select>
     </label>
   );
+}
+
+export function getFilterOptionLabel(label: string, option: string) {
+  if (option === "all") {
+    return `すべての${label}`;
+  }
+
+  if (option === "buy" || option === "sell") {
+    return sideLabels[option];
+  }
+
+  if (option === "filled" || option === "canceled" || option === "rejected") {
+    return statusLabels[option];
+  }
+
+  return option;
 }
 
 function MetricPill({ label, value }: { label: string; value: string }) {
