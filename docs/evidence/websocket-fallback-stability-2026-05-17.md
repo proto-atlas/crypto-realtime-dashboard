@@ -6,7 +6,7 @@
 | 日付 | 2026-05-17 |
 | 対象 | WebSocket連携 / Market Watchの表示行 |
 
-> この文書は4資産固定表示を導入した当時の記録です。現在のCoinbase主経路・Binance予備経路については、[2026-07-15の確認記録](websocket-primary-fallback-2026-07-15.md)を参照してください。
+> この文書は単一ページUIへ4資産固定表示を導入した当時の記録です。現在の画面では「Market Watch」を「マーケット一覧」と表示しています。Coinbase主経路・Binance予備経路については、[2026-07-15の確認記録](websocket-primary-fallback-2026-07-15.md)を参照してください。
 
 ## 概要
 

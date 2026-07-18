@@ -66,7 +66,7 @@ REST連携やWebSocket連携を選ぶと、BFF Worker経由でCoinGecko、Binanc
 
 主な検証記録は [docs/evidence/INDEX.md](docs/evidence/INDEX.md) から確認できます。
 
-- `pnpm check`: Biome、typecheck、検証スクリプトとVitestの計214件、buildが成功
+- `pnpm check`: Biome、typecheck、検証スクリプトとVitestの計216件、buildが成功
 - Playwright E2E: 3画面の移動、銘柄のクリック・キーボード操作、ローソク足canvas、仮想ポートフォリオ、10万件テーブル、Coinbase疑似失敗時のBinance切り替え、375px・390px・768px表示を含む15件が成功
 - 公開環境E2E: 仮想ポートフォリオのクリック・Enter・減少・再読み込み保持、操作状態、390px表示を含む5件が成功
 - 公開環境API確認: トップ画面がHTTP 200を返し、Coinbaseローソク足の`1m`、`5m`、`15m`、`1h`、`1d`で各120本のOHLCVと時刻間隔を確認

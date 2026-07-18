@@ -20,8 +20,8 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 
 - 方法: `pnpm check`を実行し、Biome、TypeScript、Node.jsスクリプトテスト、Vitest、production buildを確認。
 - 対象: shared-types、BFF、Web、ローソク足取得スクリプト。
-- 結果: Biomeはshared-types 4ファイル、BFF 32ファイル、Web 81ファイルを通過。Node.jsスクリプトテスト8件、shared-types 7件、BFF 72件、Web 127件の計214件が通過し、typecheckとbuildも通過。
-- 方法: `pnpm e2e`を実行し、3画面の移動、銘柄のクリック・矢印キー操作、ローソク足canvas、WebSocket予備接続、375px・390px・768px、desktop表示後の390pxリサイズを確認。
+- 結果: Node.jsスクリプト4件、shared-types 7件、BFF 72件、Web 109件の計192件が通過し、Biome、typecheck、buildも通過。
+- 方法: `pnpm e2e`を実行し、デモ操作、ローソク足canvas、WebSocket予備接続、375px・390px・768px、desktop表示後の390pxリサイズを確認。
 - 対象: Playwright E2E 10件。
 - 結果: 10件すべて通過。
 - 方法: OSV-Scanner 2.4.0で`pnpm-lock.yaml`を検査。
@@ -30,6 +30,18 @@ Crypto Real-time Dashboardの検証記録をまとめます。各記録は、そ
 - 方法: `wrangler deploy --dry-run`を実行。
 - 対象: BFF Worker、Durable Objects 2件、KV、Rate Limiting binding。
 - 結果: bundle作成とbinding解決が通過。圧縮後サイズは22.61 KiB。
+
+## 2026-07-18の3画面UI確認
+
+- 対象: 3画面UI、画面内の見出し、公開文書
+- 方法: `pnpm check`を実行し、Biome、TypeScript、検証スクリプト、Vitest、production buildを確認。
+- 結果: Biomeはshared-types 4ファイル、BFF 32ファイル、Web 81ファイルを通過。検証スクリプト8件、shared-types 7件、BFF 72件、Web 129件の計216件が通過し、typecheckとbuildも通過。
+- 方法: `pnpm e2e`を実行し、3画面の移動、銘柄のクリック・矢印キー操作、ローソク足canvas、WebSocket予備接続、375px・390px・768px、desktop表示後の390pxリサイズを確認。
+- 結果: Playwright E2E 15件が通過。
+- 方法: 3画面UIを公開したcommit `b4392f6d033444f3928bac45d6a7d6cfa4a9c55e`の[CI run 29631622055](https://github.com/proto-atlas/crypto-realtime-dashboard/actions/runs/29631622055)でverifyとCloudflare反映を確認。
+- 結果: 対象commitのlint、typecheck、test、build、E2E、Worker反映、Pages反映が成功。
+- 方法: 公開URLの`/market`、`/portfolio`、`/history`へ直接アクセスし、`pnpm e2e:production`を実行。
+- 結果: 3ルートがHTTP 200を返し、公開環境E2E 5件が通過。
 
 ## 2026-07-15のGitHub Actions反映
 

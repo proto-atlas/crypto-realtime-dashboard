@@ -1,12 +1,14 @@
 # WebSocket主経路・予備経路の確認記録
 
+> この文書は、対象commitの単一ページUIを確認した時点記録です。WebSocketの主経路・予備経路は現行の3画面UIでも維持しています。現行構成の検証結果は[検証記録の一覧](INDEX.md)を参照してください。
+
 | 項目 | 内容 |
 |---|---|
 | 日付 | 2026-07-15 |
 | 対象commit | `a5e870383b1c5ce7b7396665663f496dce0bfb3d` |
 | 対象 | Coinbase主経路 / Binance予備経路 / Coinbase復旧 |
 
-## 現在の仕様
+## 対象commit時点の仕様
 
 - WebSocket連携開始時はCoinbase relayへ接続する
 - Coinbase接続が閉じた場合またはerrorになった場合はBinance relayへ切り替える
