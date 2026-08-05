@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@crypto-realtime-dashboard/shared-types": "workspace:*",
-    "hono": "4.12.25"
+    "hono": "4.12.34"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260708.1",
